@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+
+# Entorno virtual
+.venv/
+
+# Configuración
+.env
+
+# Archivos temporales
+data/
+.ipynb_checkpoints/
