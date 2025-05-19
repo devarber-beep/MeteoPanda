@@ -14,7 +14,15 @@ def load_parquets_to_duckdb(bronze_path: Path):
         """)
         con.execute(f"""
             CREATE OR REPLACE TABLE bronze.{table_name} AS
-            SELECT * FROM read_parquet('{file.as_posix()}');
+            SELECT 
+                *,
+                DATE '{today}' AS ingestion_date,
+                '{city}' AS city,
+                '{region}' AS region,
+                '{source}' AS source,
+                {lat} AS lat,
+                {lon} AS lon,
+                {alt} AS alt FROM read_parquet('{file.as_posix()}');
         """)
         print(f"Cargado {file.name} a tabla bronze.{table_name}")
 
