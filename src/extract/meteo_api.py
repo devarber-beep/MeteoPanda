@@ -17,12 +17,11 @@ def load_config(path: str) -> tuple[List[CityConfigDTO], str, str]:
     with open(path, "r") as f:
         cfg = yaml.safe_load(f)
     cities = [CityConfigDTO(**c) for c in cfg["cities"]]
-    return cities, cfg["start_date"], cfg["end_date"]
+    return cfg["region"], cities, cfg["start_date"], cfg["end_date"]
 
 
 def get_station_id(lat: float, lon: float) -> str:
     url = f"https://meteostat.p.rapidapi.com/stations/nearby?lat={lat}&lon={lon}"
-    print(HEADERS, lat, lon)
     r = requests.get(url, headers=HEADERS)
     r.raise_for_status()
     stations = r.json()["data"]
@@ -41,6 +40,6 @@ def fetch_daily_data(station_id: str, start: str, end: str) -> pd.DataFrame:
 def save_to_parquet(df: pd.DataFrame, city_name: str):
     output_dir = Path("data/raw")
     output_dir.mkdir(parents=True, exist_ok=True)
-    file_path = output_dir / f"{city_name.lower().replace(' ', '_')}_daily.parquet"
+    file_path = output_dir / f"{city_name.lower().replace(' ', '_')}_daily .parquet"
     df.to_parquet(file_path, index=False)
     print(f"[✓] Guardado: {file_path}")

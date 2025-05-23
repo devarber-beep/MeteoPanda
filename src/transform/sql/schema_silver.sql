@@ -2,7 +2,7 @@ CREATE SCHEMA IF NOT EXISTS silver;
 
 CREATE OR REPLACE TABLE silver.weather_cleaned AS
 SELECT
-    DATE(date) AS date,
+    CAST(date AS DATE) AS date,
     city,
     region,
     strftime('%Y', date) AS year,
@@ -21,10 +21,13 @@ SELECT
     lat,
     lon,
     alt
-FROM bronze.weather_with_metadata
+FROM __UNION_ALL_BRONZE_TABLES__
 WHERE
     date IS NOT NULL
     AND tavg IS NOT NULL
     AND tmin IS NOT NULL
-    AND tmax IS NOT NULL;
+    AND tmax IS NOT NULL
+    --AND tavg BETWEEN -50 AND 60
+    --AND tmin BETWEEN -60 AND 60
+    --AND tmax BETWEEN -60 AND 70
 

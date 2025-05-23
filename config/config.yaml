@@ -1,0 +1,37 @@
+region: Andalucia
+cities:
+  - name: Sevilla
+    latitude: 37.3886
+    longitude: -5.9823
+    elevation: 7
+  - name: Malaga
+    latitude: 36.7213
+    longitude: -4.4217
+    elevation: 11
+  - name: Cordoba
+    latitude: 37.8882
+    longitude: -4.7794
+    elevation: 106
+  - name: Granada
+    latitude: 37.1773
+    longitude: -3.5986
+    elevation: 738
+  - name: Almeria
+    latitude: 36.8340
+    longitude: -2.4637
+    elevation: 21
+  - name: Cadiz
+    latitude: 36.5163
+    longitude: -6.2994
+    elevation: 6
+  - name: Huelva
+    latitude: 37.2614
+    longitude: -6.9447
+    elevation: 54
+  - name: Jaen
+    latitude: 37.7796
+    longitude: -3.7849
+    elevation: 573
+
+start_date: "2020-01-01"
+end_date: "2024-12-31"
