@@ -4,7 +4,7 @@ from pathlib import Path
 
 from src.extract.meteo_api import load_config, get_station_id, fetch_daily_data, save_to_parquet
 from src.load.load_parquet_to_duckdb import load_parquets_to_duckdb
-from src.transform.transform_to_silver import run_sql_transformations
+from src.transform.transform import run_sql_transformations
 
 # Rutas base
 CONFIG_PATH = Path("config/config.yaml")
