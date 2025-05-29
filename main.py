@@ -4,7 +4,7 @@ from pathlib import Path
 
 from src.extract.meteo_api import load_config, get_station_id, fetch_daily_data, save_to_parquet
 from src.load.load_parquet_to_duckdb import load_parquets_to_duckdb
-from src.transform.transform_to_silver import run_sql_transformations
+from src.transform.transform import run_sql_transformations
 
 # Rutas base
 CONFIG_PATH = Path("config/config.yaml")
@@ -48,11 +48,19 @@ def run_pipeline():
     except Exception as e:
         logger.exception(f"❌ Error en el pipeline: {e}")
 
+def run_pipeline_gold():
+    try:
+        logger.info("🚀 Iniciando pipeline ELT MeteoPanda → Gold...")
+        run_sql_transformations(SQL_PATH / "datamarts")
+        logger.info("✅ Pipeline completo.")
+    except Exception as e:
+        logger.exception(f"❌ Error en el pipeline: {e}")
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MeteoPanda CLI")
     parser.add_argument("--download", action="store_true", help="Descargar datos desde la API")
     parser.add_argument("--run-pipeline", action="store_true", help="Ejecutar ETL a Silver")
-    # parser.add_argument("--export-gold", action="store_true", help="Exportar a capa Gold")
+    parser.add_argument("--pipeline-gold", action="store_true", help="Transformar a capa Gold")
     # parser.add_argument("--generate-dashboard", action="store_true", help="Generar visualización")
 
     args = parser.parse_args()
@@ -62,6 +70,9 @@ if __name__ == "__main__":
 
     if args.run_pipeline:
         run_pipeline()
+
+    if args.pipeline_gold:
+        run_pipeline_gold()
 
     if not args.download and not args.run_pipeline:
         parser.print_help()
