@@ -33,15 +33,12 @@ df_coords = con.execute("""
 with st.sidebar:
     # Selector de páginas
     st.header("Navegación")
-    page = st.radio("Selecciona una página", ["Inicio", "Resumen", "Tendencias"])
+    page = st.radio("Selecciona una página", ["Inicio", "Tendencias", "Resumen"])
     
-    #Filtro de año
+    #Filtros
     year = st.selectbox("Año", options=df['year'].unique(), index=0)
-    #Filtro de Mes
     month = st.selectbox("Mes", options=sorted(df['month'].unique()), index=0)
-    #Filtro de Region
     region = st.selectbox("Region", options=df['region'].unique(), index=0)
-    #Filtro de Ciudades
     city = st.multiselect("Ciudad", options=df['city'].unique())
 
 # Función para aplicar filtros según las columnas disponibles
@@ -67,7 +64,7 @@ if page == "Inicio":
     st.header("🌍 Mapa de España")
     
     # Crear mapa centrado en España
-    m = folium.Map(location=[40.4168, -3.7038], zoom_start=6)
+    m = folium.Map(location=[40.4168, -3.7038], zoom_start=6, tiles='CartoDB positron')
     
     # Añadir marcadores para cada ciudad
     for city_name in df_filtered['city'].unique():
@@ -79,16 +76,16 @@ if page == "Inicio":
             
             folium.Marker(
                 location=[lat, lon],
-                popup=f"{city_name}: {temp}°C",
-                tooltip=city_name
+                popup=f"{city_name.capitalize()}: {temp}°C",
+                tooltip=city_name.capitalize()
             ).add_to(m)
     
     # Mostrar el mapa
     folium_static(m, width=1200, height=600)
     
     # Mostrar KPIs generales
-    st.header("📊 KPIs Generales")
-    col1, col2, col3 = st.columns(3)
+    st.header("📊 Informacion General")
+    col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         st.metric("Ciudades Monitoreadas", len(df['city'].unique()))
@@ -113,7 +110,7 @@ elif page == "Resumen":
         "Tiempo de Sol": "total_sunshine"
     }
 
-    # Display metrics for each city in columns
+    # Mostrar Metricas
     for i, city_name in enumerate(df_filtered['city'].unique()):
         city_data = df_filtered[df_filtered['city'] == city_name]
         
@@ -135,8 +132,8 @@ elif page == "Resumen":
 
     st.header(f"Dias extremos de {month}/{year}")
     
-    # Crear nuevas columnas para días extremos
-    num_cities = len(df_extreme_filtered['city'].unique())
+    # Crear nuevas columnas para días extremos pero manteniendo la proporcion de las columnas
+    num_cities = len(df_filtered['city'].unique())
     extreme_cols = st.columns(num_cities)
 
     extreme_metrics = {
@@ -146,7 +143,7 @@ elif page == "Resumen":
         "Precipitación Total": "precip_mm"
     }
 
-    # Display metrics for each city in columns
+    # Mostrar metricas
     for i, city_name in enumerate(df_extreme_filtered['city'].unique()):
         city_data = df_extreme_filtered[df_extreme_filtered['city'] == city_name]
         
@@ -169,6 +166,13 @@ elif page == "Resumen":
 else:
     st.header("📈 Tendencias Climáticas")
     
+    # Aplicar filtros solo de región y ciudad para las tendencias
+    df_trends_filtered = df_trends.copy()
+    if region and 'region' in df_trends_filtered.columns:
+        df_trends_filtered = df_trends_filtered[df_trends_filtered['region'] == region]
+    if city and 'city' in df_trends_filtered.columns:
+        df_trends_filtered = df_trends_filtered[df_trends_filtered['city'].isin(city)]
+    
     # Gráfico de tendencias de temperatura
     st.subheader("Evolución de Temperatura por Ciudad")
     fig_temp = px.line(df_trends_filtered, 
@@ -187,22 +191,48 @@ else:
                        title='Precipitación Total por Ciudad')
     st.plotly_chart(fig_precip, use_container_width=True)
     
-    # Perfiles climáticos
+    # Perfiles climáticos (con todos los filtros aplicados)
     st.subheader("Perfiles Climáticos")
     col1, col2 = st.columns(2)
     
     with col1:
         # Temperaturas extremas
-        fig_extremes = px.bar(df_climate, 
+        df_extremes_melted = df_climate.melt(id_vars='city', 
+                                      value_vars=['record_high', 'record_low'],
+                                      var_name='extreme_type', 
+                                      value_name='temperature')
+        
+        # Aplicar todos los filtros
+        if year and 'year' in df_extremes_melted.columns:
+            df_extremes_melted = df_extremes_melted[df_extremes_melted['year'] == year]
+        if month and 'month' in df_extremes_melted.columns:
+            df_extremes_melted = df_extremes_melted[df_extremes_melted['month'] == month]
+        if region and 'region' in df_extremes_melted.columns:
+            df_extremes_melted = df_extremes_melted[df_extremes_melted['region'] == region]
+        if city and 'city' in df_extremes_melted.columns:
+            df_extremes_melted = df_extremes_melted[df_extremes_melted['city'].isin(city)]
+
+        fig_extremes = px.bar(df_extremes_melted, 
                             x='city', 
-                            y=['record_high', 'record_low'],
-                            title='Temperaturas Extremas por Ciudad',
-                            barmode='group')
+                            y='temperature',
+                            color='extreme_type',
+                            barmode='group',
+                            title='Temperaturas Extremas por Ciudad')
         st.plotly_chart(fig_extremes, use_container_width=True)
     
     with col2:
-        # Precipitación anual
-        fig_precip_annual = px.bar(df_climate, 
+        # Precipitación anual (con todos los filtros aplicados)
+        df_climate_filtered = df_climate.copy()
+        if year and 'year' in df_climate_filtered.columns:
+            df_climate_filtered = df_climate_filtered[df_climate_filtered['year'] == year]
+        if month and 'month' in df_climate_filtered.columns:
+            df_climate_filtered = df_climate_filtered[df_climate_filtered['month'] == month]
+        if region and 'region' in df_climate_filtered.columns:
+            df_climate_filtered = df_climate_filtered[df_climate_filtered['region'] == region]
+        if city and 'city' in df_climate_filtered.columns:
+            df_climate_filtered = df_climate_filtered[df_climate_filtered['city'].isin(city)]
+
+        fig_precip_annual = px.bar(df_climate_filtered, 
                                  x='city', 
                                  y='yearly_precip',
                                  title='Precipitación Anual por Ciudad')
