@@ -14,9 +14,3 @@ SELECT
     ROUND(SUM(sunshine_min), 2) AS total_sunshine
 FROM silver.weather_cleaned
 GROUP BY city, region, year, month;
-
-CREATE OR REPLACE TABLE gold.city_extreme_days AS
-SELECT *, strftime('%m', date) AS month
-FROM silver.weather_cleaned
-WHERE
-    temp_max_c > 40 OR temp_min_c < 0 OR precip_mm > 50

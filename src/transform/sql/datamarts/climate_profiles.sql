@@ -9,4 +9,17 @@ SELECT
   SUM(precip_mm) AS yearly_precip,
   AVG(sunshine_min) AS avg_sunshine
 FROM silver.weather_cleaned
-GROUP BY city
+GROUP BY city;
+
+
+CREATE OR REPLACE TABLE gold.city_extreme_days AS
+SELECT
+    city,
+    region,
+    year,
+    strftime('%m', date) AS month,
+    ROUND(MAX(temp_max_c), 2) AS max_temp_month,
+    ROUND(MIN(temp_min_c), 2) AS min_temp_month,
+    ROUND(SUM(precip_mm), 2) AS total_precip_month
+FROM silver.weather_cleaned
+GROUP BY city, region, year, month;
