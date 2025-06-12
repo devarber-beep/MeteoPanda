@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 from typing import List, Dict
 from extract.dto import DailyWeatherDTO, CityConfigDTO
-from extract.aemet_api import fetch_aemet_daily_data, get_aemet_station_id, save_aemet_to_parquet
+#from extract.aemet_api import fetch_daily_data as fetch_aemet_daily_data, get_station_id as get_aemet_station_id, save_aemet_to_parquet
 import yaml
 
 # Cargar API key
@@ -56,7 +56,7 @@ def fetch_daily_data(station_id: str, start: str, end: str) -> pd.DataFrame:
         for record in raw_data:
             try:
                 weather_data = {
-                    "date": datetime.strptime(record["date"], "%Y-%m-%d").date(),
+                    "date": datetime.strptime(record["date"].split()[0], "%Y-%m-%d").date(),
                     "tmax": record.get("tmax"),
                     "tmin": record.get("tmin"),
                     "tavg": record.get("tavg"),

@@ -2,15 +2,22 @@ import os
 import requests
 import pandas as pd
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from dotenv import load_dotenv
-from extract.dto import DailyWeatherDTO
+from extract.dto import DailyWeatherDTO, CityConfigDTO
 
 # Cargar API key
 load_dotenv()
-AEMET_API_KEY = os.getenv("AEMET_API_KEY")
+AEMET_API_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJkYW5pZWwuYmFyYmVyb2pAZ21haWwuY29tIiwianRpIjoiYjcwNGI1ZTEtMTY2My00MmQ1LWIyOTUtZmVhYTExNGVlM2I3IiwiaXNzIjoiQUVNRVQiLCJpYXQiOjE3NDk3MTYyNTQsInVzZXJJZCI6ImI3MDRiNWUxLTE2NjMtNDJkNS1iMjk1LWZlYWExMTRlZTNiNyIsInJvbGUiOiIifQ.Mf_o4q6TWGaT8pwQCZW-sOeuOi0wNyBUxyOM24jgaRg"
 AEMET_BASE_URL = "https://opendata.aemet.es/opendata/api"
 HEADERS = {"api_key": AEMET_API_KEY}
+
+def load_config(path: str) -> tuple[List[CityConfigDTO], str, str]:
+    with open(path, "r") as f:
+        cfg = yaml.safe_load(f)
+    cities = [CityConfigDTO(**c) for c in cfg["cities"]]
+    return cfg["region"], cities, cfg["start_date"], cfg["end_date"]
+
 
 
 def get_station_id(lat: float, lon: float) -> Optional[str]:
