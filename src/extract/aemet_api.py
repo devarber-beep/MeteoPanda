@@ -2,12 +2,13 @@ import os
 import requests
 import pandas as pd
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional, List, Dict
 from dotenv import load_dotenv
 from pathlib import Path
 from extract.dto import DailyWeatherDTO, CityConfigDTO
 import math
+import time
 
 # Cargar API key
 load_dotenv()
@@ -141,46 +142,61 @@ def load_config(path: str) -> tuple[List[CityConfigDTO], str, str]:
     cities = [CityConfigDTO(**c) for c in cfg["cities"]]
     return cfg["region"], cities, cfg["start_date"], cfg["end_date"]
 
-def fetch_daily_data(station_id: str, start: str, end: str) -> pd.DataFrame:
+def _fetch_data_batch(station_id: str, start_date: str, end_date: str) -> pd.DataFrame:
     """
-    Obtiene datos diarios de una estación AEMET para un rango de fechas.
-    Las fechas deben estar en formato ISO 8601 (YYYY-MM-DD).
+    Función interna para obtener datos de AEMET para un rango de fechas específico.
     """
-    # Asegurar que las fechas estén en formato ISO 8601
-    try:
-        # Convertir a datetime y añadir hora 00:00:00 UTC
-        start_date = datetime.strptime(start, "%Y-%m-%d").strftime("%Y-%m-%dT00:00:00UTC")
-        end_date = datetime.strptime(end, "%Y-%m-%d").strftime("%Y-%m-%dT00:00:00UTC")
-    except ValueError as e:
-        print(f"Error en el formato de fechas: {e}")
-        return pd.DataFrame()
-    
     url = f"{AEMET_BASE_URL}/valores/climatologicos/diarios/datos/fechaini/{start_date}/fechafin/{end_date}/estacion/{station_id}"
     
     try:
+        # Primera petición para obtener la URL de los datos
         response = requests.get(url, headers=HEADERS)
         response.raise_for_status()
-        raw_data = response.json()
+        metadata = response.json()
+        print(f"Respuesta de AEMET 1 para {station_id, start_date, end_date}: {metadata}")
+        
+        if metadata.get('estado') != 200:
+            print(f"Error en la respuesta de AEMET: {metadata.get('descripcion')}")
+            return pd.DataFrame()
+            
+        # Segunda petición para obtener los datos reales
+        data_url = metadata.get('datos')
+        if not data_url:
+            print("No se encontró URL de datos en la respuesta")
+            return pd.DataFrame()
+            
+        # Añadir delay para evitar too many requests
+        time.sleep(0.5)  # Esperar medio segundo entre peticiones
+            
+        data_response = requests.get(data_url, headers=HEADERS)
+        data_response.raise_for_status()
+        raw_data = data_response.json()
+        
+        print(f"Respuesta de AEMET 2 para {station_id, start_date, end_date}: {data_response}")
 
-        print(f"Respuesta de AEMET para {station_id, start_date, end_date}: {raw_data}")
         
         # Transformar datos al formato común
         validated_data = []
         for record in raw_data:
             try:
+                def safe_float(value):
+                    if value is None or value == "" or value == "null" or value == "Ip":
+                        return None
+                    return float(str(value).replace(",", "."))
+                
                 weather_data = {
                     "date": datetime.strptime(record["fecha"], "%Y-%m-%d").date(),
-                    "tmax": float(record.get("tmax", "null").replace(",", ".")),
-                    "tmin": float(record.get("tmin", "null").replace(",", ".")),
-                    "tavg": float(record.get("tmed", "null").replace(",", ".")),
-                    "prcp": float(record.get("prec", "null").replace(",", ".")),
-                    "wdir": float(record.get("dir", "null").replace(",", ".")),
-                    "wspd": float(record.get("velmedia", "null").replace(",", ".")),
-                    "wpgt": float(record.get("racha", "null").replace(",", ".")),
-                    "pres": float(record.get("presMax", "null").replace(",", ".")),
-                    "snow": float(record.get("nieve", "null").replace(",", ".")),
-                    "tsun": float(record.get("sol", "null").replace(",", ".")),
-                    "rhum": float(record.get("hrMedia", "null").replace(",", ".")),
+                    "tmax": safe_float(record.get("tmax")),
+                    "tmin": safe_float(record.get("tmin")),
+                    "tavg": safe_float(record.get("tmed")),
+                    "prcp": safe_float(record.get("prec")),
+                    "wdir": safe_float(record.get("dir")),
+                    "wspd": safe_float(record.get("velmedia")),
+                    "wpgt": safe_float(record.get("racha")),
+                    "pres": None,  # No existe en AEMET
+                    "snow": None,  # No existe en AEMET
+                    "tsun": None,  # No existe en AEMET
+                    "rhum": None,  # No existe en AEMET
                     "station": station_id
                 }
                 validated_data.append(DailyWeatherDTO(**weather_data).dict())
@@ -191,4 +207,58 @@ def fetch_daily_data(station_id: str, start: str, end: str) -> pd.DataFrame:
         return pd.DataFrame(validated_data)
     except Exception as e:
         print(f"Error al obtener datos de AEMET: {e}")
+        return pd.DataFrame()
+
+def fetch_daily_data(station_id: str, start: str, end: str) -> pd.DataFrame:
+    """
+    Obtiene datos diarios de una estación AEMET para un rango de fechas.
+    Si el rango es mayor a 6 meses, descarga los datos en batches de 6 meses.
+    """
+    try:
+        # Convertir fechas a datetime para cálculos
+        start_dt = datetime.strptime(start, "%Y-%m-%d")
+        end_dt = datetime.strptime(end, "%Y-%m-%d")
+        
+        # Calcular diferencia en meses
+        months_diff = (end_dt.year - start_dt.year) * 12 + end_dt.month - start_dt.month
+        
+        if months_diff <= 6:
+            # Si es menos de 6 meses, descargar directamente
+            start_date = start_dt.strftime("%Y-%m-%dT00:00:00UTC")
+            end_date = end_dt.strftime("%Y-%m-%dT00:00:00UTC")
+            return _fetch_data_batch(station_id, start_date, end_date)
+        else:
+            # Si es más de 6 meses, descargar en batches
+            all_data = []
+            current_start = start_dt
+            
+            while current_start < end_dt:
+                # Calcular fecha final del batch (6 meses después o end_dt)
+                current_end = min(
+                    datetime(current_start.year + (current_start.month + 6) // 12,
+                            (current_start.month + 6) % 12 or 12,
+                            1) - timedelta(days=1),
+                    end_dt
+                )
+                
+                # Formatear fechas para la API
+                batch_start = current_start.strftime("%Y-%m-%dT00:00:00UTC")
+                batch_end = current_end.strftime("%Y-%m-%dT00:00:00UTC")
+                
+                # Descargar batch
+                batch_data = _fetch_data_batch(station_id, batch_start, batch_end)
+                if not batch_data.empty:
+                    all_data.append(batch_data)
+                
+                # Mover al siguiente batch
+                current_start = current_end + timedelta(days=1)
+                
+                # Añadir delay entre batches para evitar too many requests
+                time.sleep(2)  # Esperar 2 segundos entre batches
+            
+            # Combinar todos los batches
+            return pd.concat(all_data, ignore_index=True) if all_data else pd.DataFrame()
+            
+    except ValueError as e:
+        print(f"Error en el formato de fechas: {e}")
         return pd.DataFrame() 
