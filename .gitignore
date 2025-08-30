@@ -13,3 +13,5 @@ data/
 .ipynb_checkpoints/
 .Captura de pantalla 2025-05-14 155748.png
 .check_data.py
+.meteopanda.duckdb
+.meteopanda.duckdb.wal

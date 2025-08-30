@@ -15,6 +15,8 @@ class DailyWeatherDTO(BaseModel):
     pres: Optional[float]
     snow: Optional[float]
     tsun: Optional[float]
+    rhum: Optional[float]
+    station: Optional[str]
 
 
 class CityConfigDTO(BaseModel):
@@ -22,3 +24,19 @@ class CityConfigDTO(BaseModel):
     latitude: float
     longitude: float
     elevation: float
+
+
+class AEMETWeatherDTO(BaseModel):
+    date: date
+    tmax: Optional[float]
+    tmin: Optional[float]
+    tavg: Optional[float]
+    prcp: Optional[float]
+    wdir: Optional[float]
+    wspd: Optional[float]
+    wpgt: Optional[float]
+    pres: Optional[float]
+    snow: Optional[float]
+    tsun: Optional[float]
+    rhum: Optional[float]
+    station: str

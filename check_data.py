@@ -1,6 +1,8 @@
 import duckdb
 import pandas as pd
 from itertools import product
+import plotly.express as px
+from src.utils.db import get_connection
 
 def get_connection():
     # Asegúrate de que esta ruta sea correcta para tu base de datos DuckDB
@@ -133,3 +135,104 @@ try:
 
 finally:
     con.close()
+
+def verificar_anomalias_granada():
+    """
+    Verifica anomalías en los datos de temperatura de Granada desde 2022 hasta 2024
+    tanto en la capa silver como en gold.
+    """
+    con = get_connection()
+    
+    try:
+        # Consulta para datos silver
+        query_silver = """
+        SELECT date, temp_max_c, temp_min_c, temp_avg_c
+        FROM silver.weather_cleaned
+        WHERE city = 'granada'
+        AND date >= '2022-01-01'
+        AND date <= '2024-12-31'
+        ORDER BY date
+        """
+        
+        # Consulta para datos gold (resumen mensual)
+        query_gold = """
+        SELECT CAST(year AS INTEGER) as year, month, max_temp, min_temp, avg_temp
+        FROM gold.city_yearly_summary
+        WHERE city = 'granada'
+        AND CAST(year AS INTEGER) >= 2022
+        AND CAST(year AS INTEGER) <= 2024
+        ORDER BY year, month
+        """
+        
+        # Obtener datos
+        df_silver = con.execute(query_silver).df()
+        df_gold = con.execute(query_gold).df()
+        
+        # Análisis de datos silver
+        print("\n=== Análisis de datos diarios (Silver) ===")
+        print("\nEstadísticas descriptivas:")
+        print(df_silver.describe())
+        
+        # Detectar valores atípicos usando el método IQR
+        def detectar_outliers(series):
+            Q1 = series.quantile(0.25)
+            Q3 = series.quantile(0.75)
+            IQR = Q3 - Q1
+            lower_bound = Q1 - 1.5 * IQR
+            upper_bound = Q3 + 1.5 * IQR
+            return series[(series < lower_bound) | (series > upper_bound)]
+        
+        # Detectar outliers en cada tipo de temperatura
+        outliers_max = detectar_outliers(df_silver['temp_max_c'])
+        outliers_min = detectar_outliers(df_silver['temp_min_c'])
+        outliers_avg = detectar_outliers(df_silver['temp_avg_c'])
+        
+        print("\nDías con temperaturas máximas anómalas:")
+        print(df_silver[df_silver['temp_max_c'].isin(outliers_max)][['date', 'temp_max_c']])
+        
+        print("\nDías con temperaturas mínimas anómalas:")
+        print(df_silver[df_silver['temp_min_c'].isin(outliers_min)][['date', 'temp_min_c']])
+        
+        print("\nDías con temperaturas promedio anómalas:")
+        print(df_silver[df_silver['temp_avg_c'].isin(outliers_avg)][['date', 'temp_avg_c']])
+        
+        # Análisis de datos gold
+        print("\n=== Análisis de datos mensuales (Gold) ===")
+        print("\nEstadísticas descriptivas:")
+        print(df_gold.describe())
+        
+        # Detectar outliers en datos mensuales
+        outliers_max_gold = detectar_outliers(df_gold['max_temp'])
+        outliers_min_gold = detectar_outliers(df_gold['min_temp'])
+        outliers_avg_gold = detectar_outliers(df_gold['avg_temp'])
+        
+        print("\nMeses con temperaturas máximas anómalas:")
+        print(df_gold[df_gold['max_temp'].isin(outliers_max_gold)][['year', 'month', 'max_temp']])
+        
+        print("\nMeses con temperaturas mínimas anómalas:")
+        print(df_gold[df_gold['min_temp'].isin(outliers_min_gold)][['year', 'month', 'min_temp']])
+        
+        print("\nMeses con temperaturas promedio anómalas:")
+        print(df_gold[df_gold['avg_temp'].isin(outliers_avg_gold)][['year', 'month', 'avg_temp']])
+        
+        # Crear visualizaciones
+        # Gráfico de temperaturas diarias
+        fig_daily = px.line(df_silver, x='date', y=['temp_max_c', 'temp_min_c', 'temp_avg_c'],
+                           title='Temperaturas diarias en Granada (2022-2024)',
+                           labels={'value': 'Temperatura (°C)', 'date': 'Fecha'},
+                           color_discrete_map={'temp_max_c': 'red', 'temp_min_c': 'blue', 'temp_avg_c': 'green'})
+        fig_daily.show()
+        
+        # Gráfico de temperaturas mensuales
+        df_gold['fecha'] = pd.to_datetime(df_gold[['year', 'month']].assign(day=1))
+        fig_monthly = px.line(df_gold, x='fecha', y=['max_temp', 'min_temp', 'avg_temp'],
+                             title='Temperaturas mensuales en Granada (2022-2024)',
+                             labels={'value': 'Temperatura (°C)', 'fecha': 'Fecha'},
+                             color_discrete_map={'max_temp': 'red', 'min_temp': 'blue', 'avg_temp': 'green'})
+        fig_monthly.show()
+    
+    finally:
+        con.close()
+
+if __name__ == "__main__":
+    verificar_anomalias_granada()
