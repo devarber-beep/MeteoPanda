@@ -1,0 +1,11 @@
+pandas
+dlt
+python-dotenv
+pyyaml
+requests
+duckdb
+
+[dev]
+pytest
+black
+flake8

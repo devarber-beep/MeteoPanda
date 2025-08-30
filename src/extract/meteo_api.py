@@ -3,13 +3,24 @@ import requests
 import pandas as pd
 from dotenv import load_dotenv
 from pathlib import Path
+<<<<<<< HEAD
 from typing import List
 from extract.dto import DailyWeatherDTO, CityConfigDTO
+=======
+from typing import List, Dict
+from .dto import DailyWeatherDTO, CityConfigDTO
+#from extract.aemet_api import fetch_daily_data as fetch_aemet_daily_data, get_station_id as get_aemet_station_id, save_aemet_to_parquet
+>>>>>>> 0c17efa (Solucion definitiva al modulo de descarga masiva)
 import yaml
 
 # Cargar API key
 load_dotenv()
+<<<<<<< HEAD
 API_KEY = os.getenv("METEOSTAT_API_KEY")
+=======
+API_KEY = "b5e36938d0msh2b370cd85bb5d48p15ee49jsn8987e37d36ff"
+METEOSTAT_BASE_URL = "https://meteostat.p.rapidapi.com"
+>>>>>>> 0c17efa (Solucion definitiva al modulo de descarga masiva)
 HEADERS = {"x-rapidapi-key": API_KEY, "x-rapidapi-host": "meteostat.p.rapidapi.com"}
 
 
