@@ -5,16 +5,20 @@ from pydantic import BaseModel
 
 class DailyWeatherDTO(BaseModel):
     date: date
-    tavg: Optional[float]
-    tmin: Optional[float]
-    tmax: Optional[float]
-    prcp: Optional[float]
-    wdir: Optional[float]
-    wspd: Optional[float]
-    wpgt: Optional[float]
-    pres: Optional[float]
-    snow: Optional[float]
-    tsun: Optional[float]
+    tavg: Optional[float] = None
+    tmin: Optional[float] = None
+    tmax: Optional[float] = None
+    prcp: Optional[float] = None
+    wdir: Optional[float] = None
+    wspd: Optional[float] = None
+    wpgt: Optional[float] = None
+    pres: Optional[float] = None
+    snow: Optional[float] = None
+    tsun: Optional[float] = None
+    rhum: Optional[float] = None
+    station: Optional[str] = None
+    lat: Optional[float] = None
+    lon: Optional[float] = None
 
 
 class CityConfigDTO(BaseModel):

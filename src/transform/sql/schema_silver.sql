@@ -5,6 +5,9 @@ SELECT
     CAST(date AS DATE) AS date,
     city,
     region,
+    station,
+    lat,
+    lon,
     strftime('%Y', date) AS year,
     tavg AS temp_avg_c,
     tmin AS temp_min_c,
@@ -16,11 +19,9 @@ SELECT
     pres AS pressure_hpa,
     snow AS snow_depth_cm,
     tsun AS sunshine_min,
+    rhum AS humidity_percent,
     source,
-    ingestion_date,
-    lat,
-    lon,
-    alt
+    CURRENT_TIMESTAMP AS ingestion_date
 FROM __UNION_ALL_BRONZE_TABLES__
 WHERE
     date IS NOT NULL
