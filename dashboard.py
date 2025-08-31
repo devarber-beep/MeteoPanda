@@ -23,11 +23,30 @@ df = con.execute("SELECT * FROM gold.city_yearly_summary").df()
 df_extreme = con.execute("SELECT * FROM gold.city_extreme_days").df()
 df_trends = con.execute("SELECT * FROM gold.weather_trends").df()
 df_climate = con.execute("SELECT * FROM gold.climate_profiles").df()
-# Cargar coordenadas de las ciudades
+# Cargar coordenadas reales desde la base de datos
 df_coords = con.execute("""
     SELECT DISTINCT city, lat, lon 
     FROM silver.weather_cleaned
+    WHERE lat IS NOT NULL AND lon IS NOT NULL
 """).df()
+
+# Si no hay coordenadas en la BD, usar coordenadas hardcodeadas como fallback
+if df_coords.empty:
+    city_coordinates = {
+        'Sevilla': {'lat': 37.3891, 'lon': -5.9845},
+        'Malaga': {'lat': 36.7213, 'lon': -4.4217},
+        'Cordoba': {'lat': 37.8882, 'lon': -4.7794},
+        'Granada': {'lat': 37.1765, 'lon': -3.5976},
+        'Almeria': {'lat': 36.8402, 'lon': -2.4679},
+        'Cadiz': {'lat': 36.5298, 'lon': -6.2924},
+        'Huelva': {'lat': 37.2578, 'lon': -6.9497},
+        'Jaen': {'lat': 37.7796, 'lon': -3.7849}
+    }
+    
+    df_coords = pd.DataFrame([
+        {'city': city, 'lat': coords['lat'], 'lon': coords['lon']}
+        for city, coords in city_coordinates.items()
+    ])
 
 # Asegurar que df_extreme y df_trends tengan la columna 'region' para un filtrado consistente
 city_region_map = df[['city', 'region']].drop_duplicates()

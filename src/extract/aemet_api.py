@@ -22,7 +22,6 @@ import yaml
 
 # Cargar API key
 load_dotenv()
-#AEMET_API_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJkYW5pZWwuYmFyYmVyb2pAZ21haWwuY29tIiwianRpIjoiYjcwNGI1ZTEtMTY2My00MmQ1LWIyOTUtZmVhYTExNGVlM2I3IiwiaXNzIjoiQUVNRVQiLCJpYXQiOjE3NDk3MTYyNTQsInVzZXJJZCI6ImI3MDRiNWUxLTE2NjMtNDJkNS1iMjk1LWZlYWExMTRlZTNiNyIsInJvbGUiOiIifQ.Mf_o4q6TWGaT8pwQCZW-sOeuOi0wNyBUxyOM24jgaRg"
 AEMET_API_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJkYW5pZWwuYmFyYmVyb2pAZ21haWwuY29tIiwianRpIjoiNzZjM2ZkODMtYjVlZi00YTQ3LWI4M2QtMTc5MjJjMzZlMjMxIiwiaXNzIjoiQUVNRVQiLCJpYXQiOjE3NTYwMzE4MTcsInVzZXJJZCI6Ijc2YzNmZDgzLWI1ZWYtNGE0Ny1iODNkLTE3OTIyYzM2ZTIzMSIsInJvbGUiOiIifQ.rVEOBWGmTc3utFTnYY27SB_tVfJmIPXGIIn1Rp80MKI"
 
 AEMET_BASE_URL = "https://opendata.aemet.es/opendata/api"
@@ -711,6 +710,13 @@ def _fetch_data_batch(station_id: str, start_date: str, end_date: str) -> pd.Dat
     raw_data = data_response.json()
     print(f"Respuesta de AEMET 2 para {station_id, start_date, end_date}: {data_response}")
     
+    # Obtener coordenadas de la estación
+    stations = load_stations_data()
+    station_coords = None
+    for station in stations:
+        if station.get('indicativo') == station_id:
+            station_coords = station
+            break
     
     # Transformar datos al formato común
     validated_data = []
@@ -733,8 +739,10 @@ def _fetch_data_batch(station_id: str, start_date: str, end_date: str) -> pd.Dat
                 "pres": None,  # No existe en AEMET
                 "snow": None,  # No existe en AEMET
                 "tsun": None,  # No existe en AEMET
-                "rhum": None,  # No existe en AEMET
-                "station": station_id
+                "rhum": safe_float(record.get("hrMedia")),  # Humedad relativa media
+                "station": station_id,
+                "lat": dms_to_decimal(station_coords.get('latitud', '0')) if station_coords else None,
+                "lon": dms_to_decimal(station_coords.get('longitud', '0')) if station_coords else None
             }
             validated_data.append(DailyWeatherDTO(**weather_data).dict())
         except Exception as e:
