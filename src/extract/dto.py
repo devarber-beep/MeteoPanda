@@ -26,3 +26,4 @@ class CityConfigDTO(BaseModel):
     latitude: float
     longitude: float
     elevation: float
+    region: str

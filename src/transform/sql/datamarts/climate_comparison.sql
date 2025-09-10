@@ -27,9 +27,7 @@ WITH city_stats AS (
         COUNT(CASE WHEN wind_avg_kmh > 30 THEN 1 END) as windy_days,
         
         -- Estadísticas adicionales
-        STDDEV(temp_avg_c) as temp_variability,
-        PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY temp_avg_c) as temp_90th_percentile,
-        PERCENTILE_CONT(0.1) WITHIN GROUP (ORDER BY temp_avg_c) as temp_10th_percentile
+        -- STDDEV(temp_avg_c) as temp_variability  -- Comentado por compatibilidad con DuckDB
         
     FROM silver.weather_cleaned
     WHERE 
@@ -59,9 +57,7 @@ SELECT
     cold_days,
     rainy_days,
     windy_days,
-    temp_variability,
-    temp_90th_percentile,
-    temp_10th_percentile,
+    -- temp_variability,  -- Comentado por compatibilidad con DuckDB
     
     -- Clasificación climática
     CASE 
@@ -73,7 +69,7 @@ SELECT
     END as climate_classification,
     
     -- Rankings por temperatura (1 = más caliente)
-    ROW_NUMBER() OVER (ORDER BY avg_temp_city DESC) as heat_rank_in_region,
+    ROW_NUMBER() OVER (ORDER BY avg_temp_city DESC) as heat_rank_overall,
     ROW_NUMBER() OVER (PARTITION BY region ORDER BY avg_temp_city DESC) as heat_rank_in_region,
     
     -- Rankings por precipitación (1 = más lluviosa)

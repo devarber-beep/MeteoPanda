@@ -171,7 +171,8 @@ class AdvancedTableComponent:
                 "📄 Página",
                 options=range(1, total_pages + 1),
                 index=0,
-                help=f"Página actual de {total_pages} páginas disponibles"
+                help=f"Página actual de {total_pages} páginas disponibles",
+                key="table_page_selector"
             )
         
         # Selector de elementos por página
@@ -181,7 +182,8 @@ class AdvancedTableComponent:
                 "📊 Por página",
                 options=items_per_page_options,
                 index=1,
-                help="Número de elementos por página"
+                help="Número de elementos por página",
+                key="table_items_per_page"
             )
         
         return {
