@@ -24,81 +24,108 @@ class AdvancedChartComponent:
         
         st.subheader(title)
         
-        # Crear subplots
-        fig = make_subplots(
-            rows=2, cols=2,
-            subplot_titles=('Temperatura Promedio por Año', 'Temperatura por Mes', 
-                          'Distribución de Temperaturas', 'Evolución Temporal'),
-            specs=[[{"secondary_y": False}, {"secondary_y": False}],
-                   [{"secondary_y": False}, {"secondary_y": False}]]
-        )
+        # Crear gráficos separados para mejor legibilidad de leyendas
+        col1, col2 = st.columns(2)
         
-        # Gráfico 1: Temperatura promedio por año
-        if 'year' in data.columns and 'avg_temp' in data.columns:
-            yearly_temp = data.groupby('year')['avg_temp'].mean().reset_index()
-            fig.add_trace(
-                go.Scatter(
-                    x=yearly_temp['year'],
-                    y=yearly_temp['avg_temp'],
-                    mode='lines+markers',
-                    name='Temp. Promedio',
-                    line=dict(color='red', width=3),
-                    marker=dict(size=8)
-                ),
-                row=1, col=1
-            )
-        
-        # Gráfico 2: Temperatura por mes
-        if 'month' in data.columns and 'avg_temp' in data.columns:
-            monthly_temp = data.groupby('month')['avg_temp'].mean().reset_index()
-            fig.add_trace(
-                go.Bar(
-                    x=monthly_temp['month'],
-                    y=monthly_temp['avg_temp'],
-                    name='Temp. por Mes',
-                    marker_color='orange'
-                ),
-                row=1, col=2
-            )
-        
-        # Gráfico 3: Distribución de temperaturas
-        if 'avg_temp' in data.columns:
-            fig.add_trace(
-                go.Histogram(
-                    x=data['avg_temp'],
-                    nbinsx=20,
-                    name='Distribución',
-                    marker_color='green',
-                    opacity=0.7
-                ),
-                row=2, col=1
-            )
-        
-        # Gráfico 4: Evolución temporal por ciudad
-        if all(col in data.columns for col in ['year', 'avg_temp', 'city']):
-            for city in data['city'].unique()[:5]:  # Mostrar solo las primeras 5 ciudades
-                city_data = data[data['city'] == city]
-                city_yearly = city_data.groupby('year')['avg_temp'].mean().reset_index()
-                fig.add_trace(
+        with col1:
+            # Gráfico 1: Temperatura promedio por año
+            if 'year' in data.columns and 'avg_temp' in data.columns:
+                yearly_temp = data.groupby('year')['avg_temp'].mean().reset_index()
+                fig1 = go.Figure()
+                fig1.add_trace(
                     go.Scatter(
-                        x=city_yearly['year'],
-                        y=city_yearly['avg_temp'],
+                        x=yearly_temp['year'],
+                        y=yearly_temp['avg_temp'],
                         mode='lines+markers',
-                        name=city,
-                        line=dict(width=2)
-                    ),
-                    row=2, col=2
+                        name='Temperatura Promedio',
+                        line=dict(color='red', width=3),
+                        marker=dict(size=8)
+                    )
                 )
+                fig1.update_layout(
+                    title="Temperatura Promedio por Año",
+                    xaxis_title="Año",
+                    yaxis_title="Temperatura (°C)",
+                    template=self.template,
+                    height=300,
+                    showlegend=True
+                )
+                st.plotly_chart(fig1, use_container_width=True)
+            
+            # Gráfico 3: Distribución de temperaturas
+            if 'avg_temp' in data.columns:
+                fig3 = go.Figure()
+                fig3.add_trace(
+                    go.Histogram(
+                        x=data['avg_temp'],
+                        nbinsx=20,
+                        name='Distribución de Temperaturas',
+                        marker_color='green',
+                        opacity=0.7
+                    )
+                )
+                fig3.update_layout(
+                    title="Distribución de Temperaturas",
+                    xaxis_title="Temperatura (°C)",
+                    yaxis_title="Frecuencia",
+                    template=self.template,
+                    height=300,
+                    showlegend=True
+                )
+                st.plotly_chart(fig3, use_container_width=True)
         
-        # Actualizar layout
-        fig.update_layout(
-            height=600,
-            showlegend=True,
-            template=self.template,
-            title_text=title
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
+        with col2:
+            # Gráfico 2: Temperatura por mes
+            if 'month' in data.columns and 'avg_temp' in data.columns:
+                monthly_temp = data.groupby('month')['avg_temp'].mean().reset_index()
+                fig2 = go.Figure()
+                fig2.add_trace(
+                    go.Bar(
+                        x=monthly_temp['month'],
+                        y=monthly_temp['avg_temp'],
+                        name='Temperatura por Mes',
+                        marker_color='orange'
+                    )
+                )
+                fig2.update_layout(
+                    title="Temperatura Promedio por Mes",
+                    xaxis_title="Mes",
+                    yaxis_title="Temperatura (°C)",
+                    template=self.template,
+                    height=300,
+                    showlegend=True
+                )
+                st.plotly_chart(fig2, use_container_width=True)
+            
+            # Gráfico 4: Evolución temporal por ciudad
+            if all(col in data.columns for col in ['year', 'avg_temp', 'city']):
+                fig4 = go.Figure()
+                cities = data['city'].unique()[:5]  # Mostrar solo las primeras 5 ciudades
+                colors = px.colors.qualitative.Set3
+                
+                for i, city in enumerate(cities):
+                    city_data = data[data['city'] == city]
+                    city_yearly = city_data.groupby('year')['avg_temp'].mean().reset_index()
+                    fig4.add_trace(
+                        go.Scatter(
+                            x=city_yearly['year'],
+                            y=city_yearly['avg_temp'],
+                            mode='lines+markers',
+                            name=city,
+                            line=dict(width=2, color=colors[i % len(colors)]),
+                            marker=dict(size=6)
+                        )
+                    )
+                
+                fig4.update_layout(
+                    title="Evolución Temporal por Ciudad",
+                    xaxis_title="Año",
+                    yaxis_title="Temperatura (°C)",
+                    template=self.template,
+                    height=300,
+                    showlegend=True
+                )
+                st.plotly_chart(fig4, use_container_width=True)
     
     def render_precipitation_analysis(self, data: pd.DataFrame, title: str = "Análisis de Precipitación"):
         """Renderizar análisis de precipitación"""
@@ -108,78 +135,100 @@ class AdvancedChartComponent:
         
         st.subheader(title)
         
-        # Crear subplots
-        fig = make_subplots(
-            rows=2, cols=2,
-            subplot_titles=('Precipitación Total por Año', 'Precipitación por Mes',
-                          'Días de Lluvia por Ciudad', 'Distribución de Precipitación'),
-            specs=[[{"secondary_y": False}, {"secondary_y": False}],
-                   [{"secondary_y": False}, {"secondary_y": False}]]
-        )
+        # Crear gráficos separados para mejor legibilidad de leyendas
+        col1, col2 = st.columns(2)
         
-        # Gráfico 1: Precipitación total por año
-        if 'year' in data.columns and 'total_precip' in data.columns:
-            yearly_precip = data.groupby('year')['total_precip'].sum().reset_index()
-            fig.add_trace(
-                go.Bar(
-                    x=yearly_precip['year'],
-                    y=yearly_precip['total_precip'],
-                    name='Precipitación Total',
-                    marker_color='blue'
-                ),
-                row=1, col=1
-            )
+        with col1:
+            # Gráfico 1: Precipitación total por año
+            if 'year' in data.columns and 'total_precip' in data.columns:
+                yearly_precip = data.groupby('year')['total_precip'].sum().reset_index()
+                fig1 = go.Figure()
+                fig1.add_trace(
+                    go.Bar(
+                        x=yearly_precip['year'],
+                        y=yearly_precip['total_precip'],
+                        name='Precipitación Total',
+                        marker_color='blue'
+                    )
+                )
+                fig1.update_layout(
+                    title="Precipitación Total por Año",
+                    xaxis_title="Año",
+                    yaxis_title="Precipitación (mm)",
+                    template=self.template,
+                    height=300,
+                    showlegend=True
+                )
+                st.plotly_chart(fig1, use_container_width=True)
+            
+            # Gráfico 3: Días de lluvia por ciudad
+            if all(col in data.columns for col in ['city', 'total_precip']):
+                rainy_days = data[data['total_precip'] > 0].groupby('city').size().reset_index(name='dias_lluvia')
+                rainy_days = rainy_days.sort_values('dias_lluvia', ascending=True)
+                fig3 = go.Figure()
+                fig3.add_trace(
+                    go.Bar(
+                        x=rainy_days['dias_lluvia'],
+                        y=rainy_days['city'],
+                        orientation='h',
+                        name='Días de Lluvia',
+                        marker_color='cyan'
+                    )
+                )
+                fig3.update_layout(
+                    title="Días de Lluvia por Ciudad",
+                    xaxis_title="Días de Lluvia",
+                    yaxis_title="Ciudad",
+                    template=self.template,
+                    height=300,
+                    showlegend=True
+                )
+                st.plotly_chart(fig3, use_container_width=True)
         
-        # Gráfico 2: Precipitación por mes
-        if 'month' in data.columns and 'total_precip' in data.columns:
-            monthly_precip = data.groupby('month')['total_precip'].mean().reset_index()
-            fig.add_trace(
-                go.Bar(
-                    x=monthly_precip['month'],
-                    y=monthly_precip['total_precip'],
-                    name='Precipitación Mensual',
-                    marker_color='lightblue'
-                ),
-                row=1, col=2
-            )
-        
-        # Gráfico 3: Días de lluvia por ciudad
-        if all(col in data.columns for col in ['city', 'total_precip']):
-            rainy_days = data[data['total_precip'] > 0].groupby('city').size().reset_index(name='dias_lluvia')
-            rainy_days = rainy_days.sort_values('dias_lluvia', ascending=True)
-            fig.add_trace(
-                go.Bar(
-                    x=rainy_days['dias_lluvia'],
-                    y=rainy_days['city'],
-                    orientation='h',
-                    name='Días de Lluvia',
-                    marker_color='cyan'
-                ),
-                row=2, col=1
-            )
-        
-        # Gráfico 4: Distribución de precipitación
-        if 'total_precip' in data.columns:
-            fig.add_trace(
-                go.Histogram(
-                    x=data['total_precip'],
-                    nbinsx=20,
-                    name='Distribución',
-                    marker_color='navy',
-                    opacity=0.7
-                ),
-                row=2, col=2
-            )
-        
-        # Actualizar layout
-        fig.update_layout(
-            height=600,
-            showlegend=True,
-            template=self.template,
-            title_text=title
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
+        with col2:
+            # Gráfico 2: Precipitación por mes
+            if 'month' in data.columns and 'total_precip' in data.columns:
+                monthly_precip = data.groupby('month')['total_precip'].mean().reset_index()
+                fig2 = go.Figure()
+                fig2.add_trace(
+                    go.Bar(
+                        x=monthly_precip['month'],
+                        y=monthly_precip['total_precip'],
+                        name='Precipitación Mensual',
+                        marker_color='lightblue'
+                    )
+                )
+                fig2.update_layout(
+                    title="Precipitación Promedio por Mes",
+                    xaxis_title="Mes",
+                    yaxis_title="Precipitación (mm)",
+                    template=self.template,
+                    height=300,
+                    showlegend=True
+                )
+                st.plotly_chart(fig2, use_container_width=True)
+            
+            # Gráfico 4: Distribución de precipitación
+            if 'total_precip' in data.columns:
+                fig4 = go.Figure()
+                fig4.add_trace(
+                    go.Histogram(
+                        x=data['total_precip'],
+                        nbinsx=20,
+                        name='Distribución de Precipitación',
+                        marker_color='navy',
+                        opacity=0.7
+                    )
+                )
+                fig4.update_layout(
+                    title="Distribución de Precipitación",
+                    xaxis_title="Precipitación (mm)",
+                    yaxis_title="Frecuencia",
+                    template=self.template,
+                    height=300,
+                    showlegend=True
+                )
+                st.plotly_chart(fig4, use_container_width=True)
     
     def render_seasonal_analysis(self, data: pd.DataFrame, title: str = "Análisis Estacional"):
         """Renderizar análisis estacional"""
@@ -189,86 +238,116 @@ class AdvancedChartComponent:
         
         st.subheader(title)
         
-        # Crear subplots
-        fig = make_subplots(
-            rows=2, cols=2,
-            subplot_titles=('Temperatura por Estación', 'Precipitación por Estación',
-                          'Humedad por Estación', 'Comparación Estacional'),
-            specs=[[{"secondary_y": False}, {"secondary_y": False}],
-                   [{"secondary_y": False}, {"secondary_y": False}]]
-        )
+        # Crear gráficos separados para mejor legibilidad de leyendas
+        col1, col2 = st.columns(2)
         
-        # Gráfico 1: Temperatura por estación
-        if 'season' in data.columns and 'avg_temp_season' in data.columns:
-            season_temp = data.groupby('season')['avg_temp_season'].mean().reset_index()
-            fig.add_trace(
-                go.Bar(
-                    x=season_temp['season'],
-                    y=season_temp['avg_temp_season'],
-                    name='Temp. Promedio',
-                    marker_color='red'
-                ),
-                row=1, col=1
-            )
-        
-        # Gráfico 2: Precipitación por estación
-        if 'season' in data.columns and 'total_precip_season' in data.columns:
-            season_precip = data.groupby('season')['total_precip_season'].mean().reset_index()
-            fig.add_trace(
-                go.Bar(
-                    x=season_precip['season'],
-                    y=season_precip['total_precip_season'],
-                    name='Precipitación Total',
-                    marker_color='blue'
-                ),
-                row=1, col=2
-            )
-        
-        # Gráfico 3: Humedad por estación
-        if 'season' in data.columns and 'avg_humidity_season' in data.columns:
-            season_humidity = data.groupby('season')['avg_humidity_season'].mean().reset_index()
-            fig.add_trace(
-                go.Bar(
-                    x=season_humidity['season'],
-                    y=season_humidity['avg_humidity_season'],
-                    name='Humedad Promedio',
-                    marker_color='green'
-                ),
-                row=2, col=1
-            )
-        
-        # Gráfico 4: Comparación estacional (radar chart)
-        if all(col in data.columns for col in ['season', 'avg_temp_season', 'total_precip_season', 'avg_humidity_season']):
-            season_avg = data.groupby('season').agg({
-                'avg_temp_season': 'mean',
-                'total_precip_season': 'mean',
-                'avg_humidity_season': 'mean'
-            }).reset_index()
-            
-            # Normalizar datos para el radar chart
-            for col in ['avg_temp_season', 'total_precip_season', 'avg_humidity_season']:
-                season_avg[col] = (season_avg[col] - season_avg[col].min()) / (season_avg[col].max() - season_avg[col].min()) * 100
-            
-            for _, row in season_avg.iterrows():
-                fig.add_trace(
-                    go.Scatterpolar(
-                        r=[row['avg_temp_season'], row['total_precip_season'], row['avg_humidity_season']],
-                        theta=['Temperatura', 'Precipitación', 'Humedad'],
-                        fill='toself',
-                        name=row['season']
-                    ),
-                    row=2, col=2
+        with col1:
+            # Gráfico 1: Temperatura por estación
+            if 'season' in data.columns and 'avg_temp_season' in data.columns:
+                season_temp = data.groupby('season')['avg_temp_season'].mean().reset_index()
+                fig1 = go.Figure()
+                fig1.add_trace(
+                    go.Bar(
+                        x=season_temp['season'],
+                        y=season_temp['avg_temp_season'],
+                        name='Temperatura Promedio',
+                        marker_color='red'
+                    )
                 )
+                fig1.update_layout(
+                    title="Temperatura Promedio por Estación",
+                    xaxis_title="Estación",
+                    yaxis_title="Temperatura (°C)",
+                    template=self.template,
+                    height=300,
+                    showlegend=True
+                )
+                st.plotly_chart(fig1, use_container_width=True)
+            
+            # Gráfico 3: Humedad por estación
+            if 'season' in data.columns and 'avg_humidity_season' in data.columns:
+                season_humidity = data.groupby('season')['avg_humidity_season'].mean().reset_index()
+                fig3 = go.Figure()
+                fig3.add_trace(
+                    go.Bar(
+                        x=season_humidity['season'],
+                        y=season_humidity['avg_humidity_season'],
+                        name='Humedad Promedio',
+                        marker_color='green'
+                    )
+                )
+                fig3.update_layout(
+                    title="Humedad Promedio por Estación",
+                    xaxis_title="Estación",
+                    yaxis_title="Humedad (%)",
+                    template=self.template,
+                    height=300,
+                    showlegend=True
+                )
+                st.plotly_chart(fig3, use_container_width=True)
         
-        # Actualizar layout
-        fig.update_layout(
-            height=600,
-            showlegend=True,
-            template=self.template,
-            title_text=title
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
+        with col2:
+            # Gráfico 2: Precipitación por estación
+            if 'season' in data.columns and 'total_precip_season' in data.columns:
+                season_precip = data.groupby('season')['total_precip_season'].mean().reset_index()
+                fig2 = go.Figure()
+                fig2.add_trace(
+                    go.Bar(
+                        x=season_precip['season'],
+                        y=season_precip['total_precip_season'],
+                        name='Precipitación Total',
+                        marker_color='blue'
+                    )
+                )
+                fig2.update_layout(
+                    title="Precipitación Total por Estación",
+                    xaxis_title="Estación",
+                    yaxis_title="Precipitación (mm)",
+                    template=self.template,
+                    height=300,
+                    showlegend=True
+                )
+                st.plotly_chart(fig2, use_container_width=True)
+            
+            # Gráfico 4: Comparación estacional (radar chart)
+            if all(col in data.columns for col in ['season', 'avg_temp_season', 'total_precip_season', 'avg_humidity_season']):
+                season_avg = data.groupby('season').agg({
+                    'avg_temp_season': 'mean',
+                    'total_precip_season': 'mean',
+                    'avg_humidity_season': 'mean'
+                }).reset_index()
+                
+                # Normalizar datos para el radar chart
+                for col in ['avg_temp_season', 'total_precip_season', 'avg_humidity_season']:
+                    season_avg[col] = (season_avg[col] - season_avg[col].min()) / (season_avg[col].max() - season_avg[col].min()) * 100
+                
+                fig4 = go.Figure()
+                colors = px.colors.qualitative.Set3
+                
+                for i, (_, row) in enumerate(season_avg.iterrows()):
+                    fig4.add_trace(
+                        go.Scatterpolar(
+                            r=[row['avg_temp_season'], row['total_precip_season'], row['avg_humidity_season']],
+                            theta=['Temperatura', 'Precipitación', 'Humedad'],
+                            fill='toself',
+                            name=row['season'],
+                            line_color=colors[i % len(colors)]
+                        )
+                    )
+                
+                fig4.update_layout(
+                    title="Comparación Estacional",
+                    template=self.template,
+                    height=300,
+                    showlegend=True,
+                    polar=dict(
+                        radialaxis=dict(
+                            visible=True,
+                            range=[0, 100]
+                        )
+                    )
+                )
+                st.plotly_chart(fig4, use_container_width=True)
     
     def render_alert_analysis(self, data: pd.DataFrame, title: str = "Análisis de Alertas"):
         """Renderizar análisis de alertas meteorológicas"""
@@ -278,83 +357,105 @@ class AdvancedChartComponent:
         
         st.subheader(title)
         
-        # Crear subplots
-        fig = make_subplots(
-            rows=2, cols=2,
-            subplot_titles=('Alertas por Tipo', 'Severidad de Alertas',
-                          'Alertas por Ciudad', 'Evolución Temporal de Alertas'),
-            specs=[[{"secondary_y": False}, {"secondary_y": False}],
-                   [{"secondary_y": False}, {"secondary_y": False}]]
-        )
+        # Crear gráficos separados para mejor legibilidad de leyendas
+        col1, col2 = st.columns(2)
         
-        # Gráfico 1: Alertas por tipo
-        if 'overall_alert' in data.columns:
-            alert_counts = data['overall_alert'].value_counts().reset_index()
-            alert_counts.columns = ['Alerta', 'Cantidad']
-            fig.add_trace(
-                go.Pie(
-                    labels=alert_counts['Alerta'],
-                    values=alert_counts['Cantidad'],
-                    name='Tipos de Alerta'
-                ),
-                row=1, col=1
-            )
+        with col1:
+            # Gráfico 1: Alertas por tipo
+            if 'overall_alert' in data.columns:
+                alert_counts = data['overall_alert'].value_counts().reset_index()
+                alert_counts.columns = ['Alerta', 'Cantidad']
+                fig1 = go.Figure()
+                fig1.add_trace(
+                    go.Pie(
+                        labels=alert_counts['Alerta'],
+                        values=alert_counts['Cantidad'],
+                        name='Tipos de Alerta'
+                    )
+                )
+                fig1.update_layout(
+                    title="Distribución de Alertas por Tipo",
+                    template=self.template,
+                    height=300,
+                    showlegend=True
+                )
+                st.plotly_chart(fig1, use_container_width=True)
+            
+            # Gráfico 3: Alertas por ciudad
+            if 'city' in data.columns:
+                city_alerts = data['city'].value_counts().reset_index()
+                city_alerts.columns = ['Ciudad', 'Alertas']
+                city_alerts = city_alerts.head(10)  # Top 10 ciudades
+                fig3 = go.Figure()
+                fig3.add_trace(
+                    go.Bar(
+                        x=city_alerts['Ciudad'],
+                        y=city_alerts['Alertas'],
+                        name='Alertas por Ciudad',
+                        marker_color='red'
+                    )
+                )
+                fig3.update_layout(
+                    title="Alertas por Ciudad (Top 10)",
+                    xaxis_title="Ciudad",
+                    yaxis_title="Número de Alertas",
+                    template=self.template,
+                    height=300,
+                    showlegend=True
+                )
+                st.plotly_chart(fig3, use_container_width=True)
         
-        # Gráfico 2: Severidad de alertas
-        if 'alert_severity' in data.columns:
-            severity_counts = data['alert_severity'].value_counts().sort_index().reset_index()
-            severity_counts.columns = ['Severidad', 'Cantidad']
-            fig.add_trace(
-                go.Bar(
-                    x=severity_counts['Severidad'],
-                    y=severity_counts['Cantidad'],
-                    name='Severidad',
-                    marker_color='orange'
-                ),
-                row=1, col=2
-            )
-        
-        # Gráfico 3: Alertas por ciudad
-        if 'city' in data.columns:
-            city_alerts = data['city'].value_counts().reset_index()
-            city_alerts.columns = ['Ciudad', 'Alertas']
-            city_alerts = city_alerts.head(10)  # Top 10 ciudades
-            fig.add_trace(
-                go.Bar(
-                    x=city_alerts['Ciudad'],
-                    y=city_alerts['Alertas'],
-                    name='Alertas por Ciudad',
-                    marker_color='red'
-                ),
-                row=2, col=1
-            )
-        
-        # Gráfico 4: Evolución temporal
-        if 'date' in data.columns:
-            data['date'] = pd.to_datetime(data['date'])
-            data['month_year'] = data['date'].dt.to_period('M')
-            monthly_alerts = data.groupby('month_year').size().reset_index(name='alertas')
-            monthly_alerts['month_year'] = monthly_alerts['month_year'].astype(str)
-            fig.add_trace(
-                go.Scatter(
-                    x=monthly_alerts['month_year'],
-                    y=monthly_alerts['alertas'],
-                    mode='lines+markers',
-                    name='Evolución Temporal',
-                    line=dict(color='purple', width=3)
-                ),
-                row=2, col=2
-            )
-        
-        # Actualizar layout
-        fig.update_layout(
-            height=600,
-            showlegend=True,
-            template=self.template,
-            title_text=title
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
+        with col2:
+            # Gráfico 2: Severidad de alertas
+            if 'alert_severity' in data.columns:
+                severity_counts = data['alert_severity'].value_counts().sort_index().reset_index()
+                severity_counts.columns = ['Severidad', 'Cantidad']
+                fig2 = go.Figure()
+                fig2.add_trace(
+                    go.Bar(
+                        x=severity_counts['Severidad'],
+                        y=severity_counts['Cantidad'],
+                        name='Severidad de Alertas',
+                        marker_color='orange'
+                    )
+                )
+                fig2.update_layout(
+                    title="Distribución por Severidad",
+                    xaxis_title="Nivel de Severidad",
+                    yaxis_title="Número de Alertas",
+                    template=self.template,
+                    height=300,
+                    showlegend=True
+                )
+                st.plotly_chart(fig2, use_container_width=True)
+            
+            # Gráfico 4: Evolución temporal
+            if 'date' in data.columns:
+                data_copy = data.copy()
+                data_copy['date'] = pd.to_datetime(data_copy['date'])
+                data_copy['month_year'] = data_copy['date'].dt.to_period('M')
+                monthly_alerts = data_copy.groupby('month_year').size().reset_index(name='alertas')
+                monthly_alerts['month_year'] = monthly_alerts['month_year'].astype(str)
+                fig4 = go.Figure()
+                fig4.add_trace(
+                    go.Scatter(
+                        x=monthly_alerts['month_year'],
+                        y=monthly_alerts['alertas'],
+                        mode='lines+markers',
+                        name='Evolución Temporal',
+                        line=dict(color='purple', width=3),
+                        marker=dict(size=8)
+                    )
+                )
+                fig4.update_layout(
+                    title="Evolución Temporal de Alertas",
+                    xaxis_title="Período",
+                    yaxis_title="Número de Alertas",
+                    template=self.template,
+                    height=300,
+                    showlegend=True
+                )
+                st.plotly_chart(fig4, use_container_width=True)
     
     def render_climate_comparison(self, data: pd.DataFrame, title: str = "Comparación Climática"):
         """Renderizar comparación climática entre ciudades"""
@@ -364,85 +465,126 @@ class AdvancedChartComponent:
         
         st.subheader(title)
         
-        # Crear subplots
-        fig = make_subplots(
-            rows=2, cols=2,
-            subplot_titles=('Temperatura por Ciudad', 'Precipitación por Ciudad',
-                          'Clasificación Climática', 'Ranking de Ciudades'),
-            specs=[[{"secondary_y": False}, {"secondary_y": False}],
-                   [{"secondary_y": False}, {"secondary_y": False}]]
-        )
+        # Crear gráficos separados para mejor legibilidad de leyendas
+        col1, col2 = st.columns(2)
         
-        # Gráfico 1: Temperatura por ciudad
-        if 'city' in data.columns and 'avg_temp_city' in data.columns:
-            city_temp = data.sort_values('avg_temp_city', ascending=True)
-            fig.add_trace(
-                go.Bar(
-                    x=city_temp['avg_temp_city'],
-                    y=city_temp['city'],
-                    orientation='h',
-                    name='Temperatura Promedio',
-                    marker_color='red'
-                ),
-                row=1, col=1
-            )
-        
-        # Gráfico 2: Precipitación por ciudad
-        if 'city' in data.columns and 'total_precip_city' in data.columns:
-            city_precip = data.sort_values('total_precip_city', ascending=True)
-            fig.add_trace(
-                go.Bar(
-                    x=city_precip['total_precip_city'],
-                    y=city_precip['city'],
-                    orientation='h',
-                    name='Precipitación Total',
-                    marker_color='blue'
-                ),
-                row=1, col=2
-            )
-        
-        # Gráfico 3: Clasificación climática
-        if 'climate_classification' in data.columns:
-            climate_counts = data['climate_classification'].value_counts().reset_index()
-            climate_counts.columns = ['Clasificación', 'Cantidad']
-            fig.add_trace(
-                go.Pie(
-                    labels=climate_counts['Clasificación'],
-                    values=climate_counts['Cantidad'],
-                    name='Clasificación Climática'
-                ),
-                row=2, col=1
-            )
-        
-        # Gráfico 4: Ranking de ciudades (scatter plot)
-        if all(col in data.columns for col in ['avg_temp_city', 'total_precip_city', 'city']):
-            fig.add_trace(
-                go.Scatter(
-                    x=data['avg_temp_city'],
-                    y=data['total_precip_city'],
-                    mode='markers+text',
-                    text=data['city'],
-                    textposition="top center",
-                    name='Ciudades',
-                    marker=dict(
-                        size=10,
-                        color=data['avg_temp_city'],
-                        colorscale='Viridis',
-                        showscale=True
+        with col1:
+            # Gráfico 1: Temperatura por ciudad
+            if 'city' in data.columns and 'avg_temp_city' in data.columns:
+                city_temp = data.sort_values('avg_temp_city', ascending=True)
+                fig1 = go.Figure()
+                fig1.add_trace(
+                    go.Bar(
+                        x=city_temp['avg_temp_city'],
+                        y=city_temp['city'],
+                        orientation='h',
+                        name='Temperatura Promedio',
+                        marker_color='red'
                     )
-                ),
-                row=2, col=2
-            )
+                )
+                fig1.update_layout(
+                    title="Temperatura Promedio por Ciudad",
+                    xaxis_title="Temperatura (°C)",
+                    yaxis_title="Ciudad",
+                    template=self.template,
+                    height=300,
+                    showlegend=True
+                )
+                st.plotly_chart(fig1, use_container_width=True)
+            
+            # Gráfico 3: Clasificación climática
+            if 'climate_classification' in data.columns:
+                climate_counts = data['climate_classification'].value_counts().reset_index()
+                climate_counts.columns = ['Clasificación', 'Cantidad']
+                fig3 = go.Figure()
+                fig3.add_trace(
+                    go.Pie(
+                        labels=climate_counts['Clasificación'],
+                        values=climate_counts['Cantidad'],
+                        name='Clasificación Climática'
+                    )
+                )
+                fig3.update_layout(
+                    title="Distribución de Clasificaciones Climáticas",
+                    template=self.template,
+                    height=300,
+                    showlegend=True
+                )
+                st.plotly_chart(fig3, use_container_width=True)
         
-        # Actualizar layout
-        fig.update_layout(
-            height=600,
-            showlegend=True,
-            template=self.template,
-            title_text=title
-        )
-        
-        st.plotly_chart(fig, use_container_width=True)
+        with col2:
+            # Gráfico 2: Precipitación por ciudad
+            if 'city' in data.columns and 'total_precip_city' in data.columns:
+                city_precip = data.sort_values('total_precip_city', ascending=True)
+                fig2 = go.Figure()
+                fig2.add_trace(
+                    go.Bar(
+                        x=city_precip['total_precip_city'],
+                        y=city_precip['city'],
+                        orientation='h',
+                        name='Precipitación Total',
+                        marker_color='blue'
+                    )
+                )
+                fig2.update_layout(
+                    title="Precipitación Total por Ciudad",
+                    xaxis_title="Precipitación (mm)",
+                    yaxis_title="Ciudad",
+                    template=self.template,
+                    height=300,
+                    showlegend=True
+                )
+                st.plotly_chart(fig2, use_container_width=True)
+            
+            # Gráfico 4: Ranking de ciudades (scatter plot)
+            if all(col in data.columns for col in ['avg_temp_city', 'total_precip_city', 'city']):
+                fig4 = go.Figure()
+                fig4.add_trace(
+                    go.Scatter(
+                        x=data['avg_temp_city'],
+                        y=data['total_precip_city'],
+                        mode='markers+text',
+                        text=data['city'],
+                        textposition="top center",
+                        name='Comparación de Ciudades',
+                        marker=dict(
+                            size=12,
+                            color=data['avg_temp_city'],
+                            colorscale='Viridis',
+                            showscale=True,
+                            colorbar=dict(
+                                title="Temperatura (°C)",
+                                y=0.3,
+                                yanchor='middle'
+                            )
+                        )
+                    )
+                )
+                fig4.update_layout(
+                    title="Comparación Climática: Temperatura vs Precipitación",
+                    xaxis_title="Temperatura Promedio (°C)",
+                    yaxis_title="Precipitación Total (mm)",
+                    template=self.template,
+                    height=300,
+                    showlegend=True,
+                    legend=dict(
+                        x=1.05,
+                        y=1,
+                        xanchor='left',
+                        yanchor='top',
+                        bgcolor='rgba(255,255,255,0.9)',
+                        bordercolor='rgba(0,0,0,0.3)',
+                        borderwidth=1,
+                        itemwidth=30,
+                        itemsizing='constant',
+                        traceorder='normal',
+                        itemclick='toggleothers',
+                        font=dict(size=10),
+                        orientation='v'
+                    ),
+                    margin=dict(r=120)  # Margen derecho ligeramente menor para la leyenda
+                )
+                st.plotly_chart(fig4, use_container_width=True)
     
     def render_kpi_dashboard(self, data: pd.DataFrame, title: str = "Dashboard de KPIs"):
         """Renderizar dashboard de KPIs"""

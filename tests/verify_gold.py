@@ -129,3 +129,4 @@ except Exception as e:
     print(f"❌ Error mostrando ejemplos: {e}")
 
 con.close()
+########################################################

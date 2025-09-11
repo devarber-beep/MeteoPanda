@@ -11,25 +11,28 @@ class FilterManager:
     
     def __init__(self, data: Dict[str, pd.DataFrame]):
         self.data = data
-        self.summary = data.get('summary', pd.DataFrame())
+        self.summary = data.get('summary', pd.DataFrame()) if data else pd.DataFrame()
         self.active_filters = {}
     
     def render_filters(self) -> Dict[str, Any]:
         """Renderizar filtros en sidebar con validaciones"""
         with st.sidebar:
-            st.header("🎛️ Filtros Avanzados")
-            
             # Obtener opciones disponibles
             filter_options = self._get_filter_options()
             
-            # Filtros principales
-            self._render_date_filters(filter_options)
-            self._render_location_filters(filter_options)
-            self._render_weather_filters(filter_options)
-            self._render_advanced_filters()
-            
-            # Botones de control
-            self._render_control_buttons()
+            # Envolver todos los filtros en un expander
+            with st.expander("Filtros Avanzados", expanded=False):
+                
+                # Filtros principales
+                self._render_date_filters(filter_options)
+                self._render_location_filters(filter_options)
+                self._render_weather_filters(filter_options)
+                self._render_advanced_filters()
+                
+                st.divider()
+                
+                # Botones de control
+                self._render_control_buttons()
             
             return self.active_filters
     
@@ -44,24 +47,29 @@ class FilterManager:
             'alert_levels': ['Normal', 'ALERTA AMARILLA', 'ALERTA NARANJA', 'ALERTA ROJA']
         }
         
-        if not self.summary.empty:
-            options['years'] = sorted(self.summary['year'].unique().tolist())
-            options['months'] = sorted(self.summary['month'].unique().tolist())
-            options['regions'] = sorted(self.summary['region'].unique().tolist())
-            options['cities'] = sorted(self.summary['city'].unique().tolist())
+        # Verificar que self.summary existe y no está vacío
+        if self.summary is not None and not self.summary.empty:
+            try:
+                options['years'] = sorted(self.summary['year'].unique().tolist())
+                options['months'] = sorted(self.summary['month'].unique().tolist())
+                options['regions'] = sorted(self.summary['region'].unique().tolist())
+                options['cities'] = sorted(self.summary['city'].unique().tolist())
+            except (KeyError, AttributeError):
+                # Si hay algún error al acceder a las columnas, mantener las opciones por defecto
+                pass
         
         return options
     
     def _render_date_filters(self, options: Dict[str, List]):
         """Renderizar filtros de fecha"""
-        st.subheader("📅 Filtros de Fecha")
-        
+        st.subheader("Filtros de Fecha")
         # Filtro de año
         selected_year = st.selectbox(
             "Año",
             options=['Todos'] + [str(y) for y in options['years']],
             index=0,
-            help="Selecciona un año específico o 'Todos' para ver todos los años"
+            help="Selecciona un año específico o 'Todos' para ver todos los años",
+            key="filter_year"
         )
         
         # Filtro de mes
@@ -69,7 +77,8 @@ class FilterManager:
             "Mes",
             options=['Todos'] + [str(m) for m in options['months']],
             index=0,
-            help="Selecciona un mes específico o 'Todos' para ver todos los meses"
+            help="Selecciona un mes específico o 'Todos' para ver todos los meses",
+            key="filter_month"
         )
         
         # Filtro de rango de fechas
@@ -96,29 +105,32 @@ class FilterManager:
     
     def _render_location_filters(self, options: Dict[str, List]):
         """Renderizar filtros de ubicación"""
-        st.subheader("📍 Filtros de Ubicación")
-        
+        st.subheader("Filtros de Ubicación")
         # Filtro de región
         selected_region = st.selectbox(
             "Región",
             options=['Todas'] + options['regions'],
             index=0,
-            help="Selecciona una región específica o 'Todas' para ver todas las regiones"
+            help="Selecciona una región específica o 'Todas' para ver todas las regiones",
+            key="filter_region"
         )
         
         # Filtro de ciudades
-        if selected_region != 'Todas':
-            # Filtrar ciudades por región seleccionada
-            region_cities = self.summary[self.summary['region'] == selected_region]['city'].unique()
-            available_cities = sorted(region_cities)
+        if selected_region != 'Todas' and self.summary is not None and not self.summary.empty:
+            try:
+                # Filtrar ciudades por región seleccionada
+                region_cities = self.summary[self.summary['region'] == selected_region]['city'].unique()
+                available_cities = sorted(region_cities)
+            except (KeyError, AttributeError):
+                available_cities = options['cities']
         else:
             available_cities = options['cities']
         
         selected_cities = st.multiselect(
             "Ciudades",
             options=available_cities,
-            default=available_cities[:3] if len(available_cities) >= 3 else available_cities,
-            help="Selecciona una o más ciudades. Por defecto se muestran las primeras 3."
+            default=[],  # Sin ciudades seleccionadas por defecto
+            help="Selecciona una o más ciudades. Por defecto no hay ninguna seleccionada."
         )
         
         self.active_filters.update({
@@ -128,14 +140,14 @@ class FilterManager:
     
     def _render_weather_filters(self, options: Dict[str, List]):
         """Renderizar filtros meteorológicos"""
-        st.subheader("🌤️ Filtros Meteorológicos")
-        
+        st.subheader("Filtros Meteorológicos")
         # Filtro de estación
         selected_season = st.selectbox(
             "Estación",
             options=['Todas'] + options['seasons'],
             index=0,
-            help="Selecciona una estación específica o 'Todas' para ver todas las estaciones"
+            help="Selecciona una estación específica o 'Todos' para ver todas las estaciones",
+            key="filter_season"
         )
         
         # Filtro de nivel de alerta
@@ -143,7 +155,8 @@ class FilterManager:
             "Nivel de Alerta",
             options=['Todos'] + options['alert_levels'],
             index=0,
-            help="Selecciona un nivel de alerta específico o 'Todos' para ver todas las alertas"
+            help="Selecciona un nivel de alerta específico o 'Todos' para ver todas las alertas",
+            key="filter_alert_level"
         )
         
         # Filtros de temperatura
@@ -188,70 +201,51 @@ class FilterManager:
     
     def _render_advanced_filters(self):
         """Renderizar filtros avanzados"""
-        st.subheader("🔧 Filtros Avanzados")
-        
+        st.subheader("Filtros Avanzados")
         # Filtro de fuente de datos
         sources = ['Todas', 'AEMET', 'Meteostat']
         selected_source = st.selectbox(
             "Fuente de Datos",
             options=sources,
             index=0,
-            help="Selecciona la fuente de datos específica"
-        )
-        
-        # Filtro de calidad de datos
-        min_data_quality = st.slider(
-            "Calidad Mínima de Datos (%)",
-            min_value=0,
-            max_value=100,
-            value=0,
-            step=5,
-            help="Porcentaje mínimo de datos completos requerido"
-        )
-        
-        # Filtro de estación meteorológica
-        show_station_info = st.checkbox(
-            "Mostrar información de estación",
-            value=False,
-            help="Incluir información de la estación meteorológica en los resultados"
+            help="Selecciona la fuente de datos específica",
+            key="filter_source"
         )
         
         self.active_filters.update({
-            'source': selected_source if selected_source != 'Todas' else None,
-            'min_data_quality': min_data_quality,
-            'show_station_info': show_station_info
+            'source': selected_source if selected_source != 'Todas' else None
         })
     
     def _render_control_buttons(self):
         """Renderizar botones de control"""
-        st.subheader("⚙️ Controles")
+        st.subheader("Controles")
         
-        col1, col2 = st.columns(2)
+        # Botones en una sola fila
+        col1, col2 = st.columns([1, 1])
         
         with col1:
-            if st.button("🔄 Resetear Filtros", help="Limpiar todos los filtros aplicados"):
+            if st.button("Resetear", help="Limpiar todos los filtros", use_container_width=True):
                 self.active_filters.clear()
                 st.rerun()
         
         with col2:
-            if st.button("💾 Guardar Filtros", help="Guardar la configuración actual de filtros"):
+            if st.button("Guardar", help="Guardar configuración", use_container_width=True):
                 self._save_filter_config()
-        
-        # Mostrar filtros activos
-        if self.active_filters:
-            st.info("Filtros activos:")
-            for key, value in self.active_filters.items():
-                if value is not None and value != []:
-                    st.write(f"• {key}: {value}")
     
     def _save_filter_config(self):
         """Guardar configuración de filtros"""
         # Aquí se implementaría la lógica para guardar filtros
         st.success("Configuración de filtros guardada")
     
+
+    
     def apply_filters(self, df: pd.DataFrame) -> pd.DataFrame:
         """Aplicar filtros a un DataFrame"""
         if df.empty:
+            return df
+        
+        # Si no hay filtros activos, devolver todos los datos
+        if not self.active_filters or all(v is None or v == [] for v in self.active_filters.values()):
             return df
         
         filtered_df = df.copy()

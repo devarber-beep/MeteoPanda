@@ -13,12 +13,30 @@ class AdvancedMapComponent:
     
     def __init__(self, coords_df: pd.DataFrame):
         self.coords_df = coords_df
-        self.map_center = [37.3891, -5.9845]  # Centrado en Sevilla
-        self.default_zoom = 7
+        self.map_center = [40.4168, -3.7038]  # Centrado en Madrid (centro de España)
+        self.default_zoom = 6
     
     def render_map(self, data: pd.DataFrame, metric: str = 'avg_temp', 
                    map_type: str = 'temperature', height: int = 600) -> folium.Map:
         """Renderizar mapa con métricas y funcionalidades avanzadas"""
+        
+        # Crear clave única para el caché del mapa
+        cache_key = f"map_{map_type}_{metric}_{len(data)}"
+        
+        # Verificar si el mapa ya está en session_state
+        if cache_key in st.session_state:
+            # Verificar si los datos han cambiado
+            current_data_hash = str(hash(str(data.values.tobytes()) + str(data.index.tolist())))
+            if st.session_state[cache_key]['data_hash'] == current_data_hash:
+                # Usar mapa desde caché
+                return st.session_state[cache_key]['map']
+        
+        # Crear hash de los datos para el caché
+        try:
+            data_hash = str(hash(str(data.values.tobytes()) + str(data.index.tolist())))
+        except (AttributeError, TypeError):
+            # Fallback para índices que no soportan tobytes()
+            data_hash = str(hash(str(data.values.tobytes()) + str(data.index.values.tolist())))
         
         # Crear mapa base
         m = self._create_base_map(map_type)
@@ -40,9 +58,18 @@ class AdvancedMapComponent:
         # Añadir controles adicionales
         self._add_map_controls(m)
         
+        # Guardar mapa en session_state para evitar recreaciones
+        st.session_state[cache_key] = {
+            'map': m,
+            'data_hash': data_hash,
+            'timestamp': st.session_state.get('_last_map_update', 0)
+        }
+        st.session_state['_last_map_update'] = st.session_state.get('_last_map_update', 0) + 1
+        
         return m
     
-    def _create_base_map(self, map_type: str) -> folium.Map:
+    @st.cache_data(ttl=7200)
+    def _create_base_map(_self, map_type: str) -> folium.Map:
         """Crear mapa base con configuración específica"""
         tile_options = {
             'temperature': 'CartoDB positron',
@@ -52,8 +79,8 @@ class AdvancedMapComponent:
         }
         
         m = folium.Map(
-            location=self.map_center,
-            zoom_start=self.default_zoom,
+            location=_self.map_center,
+            zoom_start=_self.default_zoom,
             tiles=tile_options.get(map_type, 'CartoDB positron'),
             control_scale=True
         )
@@ -366,8 +393,8 @@ class AdvancedMapComponent:
             collapsed_height=25
         ).add_to(m)
     
-    def render_map_selector(self) -> str:
-        """Renderizar selector de tipo de mapa"""
+    def render_map_selector(self, context: str = "main") -> str:
+        """Renderizar selector de tipo de mapa con lazy loading"""
         map_types = {
             'temperature': '🌡️ Temperatura',
             'precipitation': '🌧️ Precipitación',
@@ -375,16 +402,26 @@ class AdvancedMapComponent:
             'comparison': '🌍 Comparación Climática'
         }
         
+        # Inicializar session state para el mapa seleccionado
+        map_key = f"selected_map_{context}"
+        if map_key not in st.session_state:
+            st.session_state[map_key] = 'temperature'
+        
         selected_map = st.selectbox(
             "🗺️ Tipo de Mapa",
             options=list(map_types.keys()),
             format_func=lambda x: map_types[x],
-            help="Selecciona el tipo de visualización del mapa"
+            help="Selecciona el tipo de visualización del mapa",
+            key=f"map_type_selector_{context}",
+            index=list(map_types.keys()).index(st.session_state[map_key])
         )
+        
+        # Actualizar session state
+        st.session_state[map_key] = selected_map
         
         return selected_map
     
-    def render_metric_selector(self, map_type: str) -> str:
+    def render_metric_selector(self, map_type: str, context: str = "main") -> str:
         """Renderizar selector de métrica según el tipo de mapa"""
         if map_type == 'temperature':
             metrics = {
@@ -404,7 +441,32 @@ class AdvancedMapComponent:
             "📊 Métrica",
             options=list(metrics.keys()),
             format_func=lambda x: metrics[x],
-            help="Selecciona la métrica a visualizar"
+            help="Selecciona la métrica a visualizar",
+            key=f"metric_selector_{map_type}_{context}"
         )
         
         return selected_metric
+    
+    def render_map_with_lazy_loading(self, data: pd.DataFrame, metric: str, map_type: str, context: str = "main") -> None:
+        """Renderizar mapa con lazy loading - solo renderiza el mapa seleccionado"""
+        map_key = f"selected_map_{context}"
+        current_map = st.session_state.get(map_key, 'temperature')
+        
+        # Solo renderizar si el mapa seleccionado coincide con el tipo actual
+        if current_map == map_type:
+            if not data.empty:
+                map_obj = self.render_map(data, metric, map_type)
+                from streamlit_folium import st_folium
+                
+                # Usar key única para cada contexto y tipo de mapa
+                map_component_key = f"map_{context}_{map_type}"
+                st_folium(map_obj, height=600, width=1000, key=map_component_key)
+            else:
+                st.warning(f"No hay datos disponibles para el mapa de {map_type}")
+        else:
+            # Mostrar placeholder mientras se carga
+            with st.spinner(f"Cargando mapa de {map_type}..."):
+                st.info(f"Mapa de {map_type} seleccionado. Cambiando visualización...")
+                # Pequeño delay para mostrar el feedback
+                import time
+                time.sleep(0.1)

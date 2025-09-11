@@ -36,7 +36,9 @@ def load_city_config(config_path: str) -> tuple[List[CityConfigDTO], str, str, s
     with open(config_path, "r") as f:
         cfg = yaml.safe_load(f)
     cities = [CityConfigDTO(**c) for c in cfg["cities"]]
-    return cities, cfg["start_date"], cfg["end_date"], cfg["region"]
+    # Obtener la región de la primera ciudad (todas deberían tener la misma región o podemos usar "Mixed")
+    region = cities[0].region if cities else "Unknown"
+    return cities, cfg["start_date"], cfg["end_date"], region
 
 def extract_meteostat_data(city: CityConfigDTO, start_date: str, end_date: str, region: str) -> pd.DataFrame:
     """
@@ -130,34 +132,24 @@ def create_weather_raw_schema():
                     'lat': city['latitude'],
                     'lon': city['longitude']
                 }
+            
+            # Generar dinámicamente las cláusulas CASE para lat y lon
+            lat_cases = []
+            lon_cases = []
+            for city_name, coords in city_coords.items():
+                lat_cases.append(f"WHEN city = '{city_name}' THEN {coords['lat']}")
+                lon_cases.append(f"WHEN city = '{city_name}' THEN {coords['lon']}")
+            
+            lat_case_sql = "CASE " + " ".join(lat_cases) + " ELSE NULL END"
+            lon_case_sql = "CASE " + " ".join(lon_cases) + " ELSE NULL END"
                         
             # Copiar datos al esquema weather_raw con coordenadas del config
             con.execute(f"""
                 CREATE TABLE IF NOT EXISTS weather_raw.weather_data AS 
                 SELECT 
                     *,
-                    CASE 
-                        WHEN city = 'Sevilla' THEN {city_coords['Sevilla']['lat']}
-                        WHEN city = 'Malaga' THEN {city_coords['Malaga']['lat']}
-                        WHEN city = 'Cordoba' THEN {city_coords['Cordoba']['lat']}
-                        WHEN city = 'Granada' THEN {city_coords['Granada']['lat']}
-                        WHEN city = 'Almeria' THEN {city_coords['Almeria']['lat']}
-                        WHEN city = 'Cadiz' THEN {city_coords['Cadiz']['lat']}
-                        WHEN city = 'Huelva' THEN {city_coords['Huelva']['lat']}
-                        WHEN city = 'Jaen' THEN {city_coords['Jaen']['lat']}
-                        ELSE NULL
-                    END AS lat,
-                    CASE 
-                        WHEN city = 'Sevilla' THEN {city_coords['Sevilla']['lon']}
-                        WHEN city = 'Malaga' THEN {city_coords['Malaga']['lon']}
-                        WHEN city = 'Cordoba' THEN {city_coords['Cordoba']['lon']}
-                        WHEN city = 'Granada' THEN {city_coords['Granada']['lon']}
-                        WHEN city = 'Almeria' THEN {city_coords['Almeria']['lon']}
-                        WHEN city = 'Cadiz' THEN {city_coords['Cadiz']['lon']}
-                        WHEN city = 'Huelva' THEN {city_coords['Huelva']['lon']}
-                        WHEN city = 'Jaen' THEN {city_coords['Jaen']['lon']}
-                        ELSE NULL
-                    END AS lon
+                    {lat_case_sql} AS lat,
+                    {lon_case_sql} AS lon
                 FROM {latest_schema}.weather_data
             """)
             
@@ -187,23 +179,26 @@ def extract_and_load(config_path: str):
     Función principal que extrae datos de todas las fuentes y los carga en dlt.
     """
     # Cargar configuración
-    cities, start_date, end_date, region = load_city_config(config_path)
+    cities, start_date, end_date, _ = load_city_config(config_path)
     
     all_data = []
     
     for city in cities:
         print(f"\nProcesando ciudad: {city.name}")
         
+        # Usar la región específica de cada ciudad
+        city_region = city.region
+        
         # Extraer datos de Meteostat
         print(f"Extrayendo datos de Meteostat {city.name}")
-        meteostat_df = extract_meteostat_data(city, start_date, end_date, region)
+        meteostat_df = extract_meteostat_data(city, start_date, end_date, city_region)
         if not meteostat_df.empty:
             #meteostat_df = standardize_weather_data(meteostat_df, "meteostat")
             all_data.append(meteostat_df)
         
         # Extraer datos de AEMET
         print(f"Extrayendo datos de AEMET {city.name}")
-        aemet_df = extract_aemet_data(city, start_date, end_date, region)
+        aemet_df = extract_aemet_data(city, start_date, end_date, city_region)
         if not aemet_df.empty:
             #aemet_df = standardize_weather_data(aemet_df, "aemet")
             all_data.append(aemet_df)
