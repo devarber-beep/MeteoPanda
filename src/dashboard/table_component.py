@@ -216,13 +216,7 @@ class AdvancedTableComponent:
             
             # Información de paginación
             st.caption(f"📊 Mostrando {start_idx + 1}-{end_idx} de {total_items} registros | Página {current_page} de {pagination_config['total_pages']}")
-    
-    def _apply_table_styles(self, table_data: pd.DataFrame) -> pd.DataFrame:
-        """Aplicar estilos a la tabla"""
-        # Aquí se podrían aplicar estilos condicionales
-        # Por ejemplo, colorear filas según alertas, etc.
-        return table_data
-    
+
     def _render_export_options(self, table_data: pd.DataFrame):
         """Renderizar opciones de exportación"""
         st.subheader("📤 Exportar Datos")

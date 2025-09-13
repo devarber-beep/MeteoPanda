@@ -220,22 +220,11 @@ class FilterManager:
         """Renderizar botones de control"""
         st.subheader("Controles")
         
-        # Botones en una sola fila
-        col1, col2 = st.columns([1, 1])
-        
-        with col1:
-            if st.button("Resetear", help="Limpiar todos los filtros", use_container_width=True):
-                self.active_filters.clear()
-                st.rerun()
-        
-        with col2:
-            if st.button("Guardar", help="Guardar configuración", use_container_width=True):
-                self._save_filter_config()
+        # Botón de reset
+        if st.button("Resetear", help="Limpiar todos los filtros", use_container_width=True):
+            self.active_filters.clear()
+            st.rerun()
     
-    def _save_filter_config(self):
-        """Guardar configuración de filtros"""
-        # Aquí se implementaría la lógica para guardar filtros
-        st.success("Configuración de filtros guardada")
     
 
     
@@ -279,29 +268,3 @@ class FilterManager:
             filtered_df = filtered_df[filtered_df['source'] == self.active_filters['source']]
         
         return filtered_df
-    
-    def get_filter_summary(self) -> Dict[str, Any]:
-        """Obtener resumen de filtros aplicados"""
-        summary = {
-            'total_filters': len([v for v in self.active_filters.values() if v is not None and v != []]),
-            'active_filters': {k: v for k, v in self.active_filters.items() if v is not None and v != []},
-            'data_impact': self._calculate_data_impact()
-        }
-        return summary
-    
-    def _calculate_data_impact(self) -> Dict[str, int]:
-        """Calcular el impacto de los filtros en los datos"""
-        impact = {}
-        
-        for data_key, df in self.data.items():
-            if df is not None and not df.empty:
-                original_count = len(df)
-                filtered_count = len(self.apply_filters(df))
-                impact[data_key] = {
-                    'original': original_count,
-                    'filtered': filtered_count,
-                    'reduction': original_count - filtered_count,
-                    'reduction_pct': round((original_count - filtered_count) / original_count * 100, 1) if original_count > 0 else 0
-                }
-        
-        return impact

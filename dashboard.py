@@ -18,6 +18,15 @@ from src.dashboard.filter_manager import FilterManager
 from src.dashboard.table_component import AdvancedTableComponent
 from src.dashboard.map_component import AdvancedMapComponent
 from src.dashboard.chart_component import AdvancedChartComponent
+from src.dashboard.analysis_strategies import (
+    AnalysisContext,
+    TrendAnalysisStrategy,
+    TemperatureAnalysisStrategy,
+    PrecipitationAnalysisStrategy,
+    SeasonalAnalysisStrategy,
+    AlertAnalysisStrategy,
+    ClimateComparisonStrategy
+)
 
 # Configuración de la página
 st.set_page_config(
@@ -39,16 +48,24 @@ def load_config():
         return None
 
 class MeteoPandaDashboard:
-    """Dashboard principal de MeteoPanda con arquitectura modular"""
+    """Dashboard principal de MeteoPanda con arquitectura modular y desacoplada"""
     
     def __init__(self):
+        # Componentes concretos
         self.data_manager = DataManager()
         self.config = load_config()
         self.data = None
-        self.filter_manager = None
+        
+        # Componentes de UI
         self.table_component = AdvancedTableComponent()
         self.map_component = None
         self.chart_component = AdvancedChartComponent()
+        
+        # Componentes directos 
+        self.filter_manager = None
+        
+        # Contexto de análisis
+        self.analysis_context = None
     
     def initialize(self):
         """Inicializar el dashboard"""
@@ -64,8 +81,15 @@ class MeteoPandaDashboard:
             if self.data.get('coords') is not None:
                 self.map_component = AdvancedMapComponent(self.data['coords'])
             
-            # Inicializar filtros sin aplicar ninguno
+            # Inicializar filtros
             self.filter_manager = FilterManager(self.data)
+            
+            # Inicializar contexto de análisis
+            self.analysis_context = AnalysisContext(
+                self.data, 
+                self.filter_manager, 
+                self.chart_component
+            )
             
             return True
     
@@ -226,16 +250,18 @@ class MeteoPandaDashboard:
         selected_data = self.data.get(selected_data_type, pd.DataFrame())
         
         if not selected_data.empty:
-            # Aplicar filtros si están disponibles
+            # Aplicar filtros directamente
             if self.filter_manager:
                 filtered_data = self.filter_manager.apply_filters(selected_data)
+                active_filters = self.filter_manager.active_filters
             else:
                 filtered_data = selected_data
+                active_filters = {}
             
             # Renderizar tabla
             self.table_component.render_table(
                 filtered_data, 
-                self.filter_manager.active_filters if self.filter_manager else {},
+                active_filters,
                 f"Tabla de {data_types[selected_data_type]}"
             )
         else:
@@ -287,111 +313,33 @@ class MeteoPandaDashboard:
     
     def render_trend_analysis(self):
         """Renderizar análisis de tendencias"""
-        st.header("Análisis de Tendencias")
-        
-        trends_data = self.data.get('trends', pd.DataFrame())
-        
-        if not trends_data.empty:
-            # Aplicar filtros
-            if self.filter_manager:
-                filtered_trends = self.filter_manager.apply_filters(trends_data)
-            else:
-                filtered_trends = trends_data
-            
-            # Gráficos de tendencias
-            self.chart_component.render_temperature_trends(filtered_trends, "Tendencias de Temperatura")
-        else:
-            st.warning("No hay datos de tendencias disponibles.")
+        strategy = TrendAnalysisStrategy()
+        self.analysis_context.execute_analysis(strategy)
     
     def render_temperature_analysis(self):
         """Renderizar análisis específico de temperatura"""
-        st.header("Análisis de Temperatura")
-        
-        summary_data = self.data.get('summary', pd.DataFrame())
-        
-        if not summary_data.empty:
-            # Aplicar filtros
-            if self.filter_manager:
-                filtered_data = self.filter_manager.apply_filters(summary_data)
-            else:
-                filtered_data = summary_data
-            
-            # Gráficos de temperatura
-            self.chart_component.render_temperature_trends(filtered_data, "Análisis Detallado de Temperatura")
-        else:
-            st.warning("No hay datos de temperatura disponibles.")
+        strategy = TemperatureAnalysisStrategy()
+        self.analysis_context.execute_analysis(strategy)
     
     def render_precipitation_analysis(self):
         """Renderizar análisis específico de precipitación"""
-        st.header("Análisis de Precipitación")
-        
-        summary_data = self.data.get('summary', pd.DataFrame())
-        
-        if not summary_data.empty:
-            # Aplicar filtros
-            if self.filter_manager:
-                filtered_data = self.filter_manager.apply_filters(summary_data)
-            else:
-                filtered_data = summary_data
-            
-            # Gráficos de precipitación
-            self.chart_component.render_precipitation_analysis(filtered_data, "Análisis Detallado de Precipitación")
-        else:
-            st.warning("No hay datos de precipitación disponibles.")
+        strategy = PrecipitationAnalysisStrategy()
+        self.analysis_context.execute_analysis(strategy)
     
     def render_seasonal_analysis(self):
         """Renderizar análisis estacional"""
-        st.header("Análisis Estacional")
-        
-        seasonal_data = self.data.get('seasonal', pd.DataFrame())
-        
-        if not seasonal_data.empty:
-            # Aplicar filtros
-            if self.filter_manager:
-                filtered_data = self.filter_manager.apply_filters(seasonal_data)
-            else:
-                filtered_data = seasonal_data
-            
-            # Gráficos estacionales
-            self.chart_component.render_seasonal_analysis(filtered_data, "Análisis Estacional Detallado")
-        else:
-            st.warning("No hay datos estacionales disponibles.")
+        strategy = SeasonalAnalysisStrategy()
+        self.analysis_context.execute_analysis(strategy)
     
     def render_alert_analysis(self):
         """Renderizar análisis de alertas"""
-        st.header("Análisis de Alertas Meteorológicas")
-        
-        alerts_data = self.data.get('alerts', pd.DataFrame())
-        
-        if not alerts_data.empty:
-            # Aplicar filtros
-            if self.filter_manager:
-                filtered_data = self.filter_manager.apply_filters(alerts_data)
-            else:
-                filtered_data = alerts_data
-            
-            # Gráficos de alertas
-            self.chart_component.render_alert_analysis(filtered_data, "Análisis de Alertas Meteorológicas")
-        else:
-            st.warning("No hay datos de alertas disponibles.")
+        strategy = AlertAnalysisStrategy()
+        self.analysis_context.execute_analysis(strategy)
     
     def render_climate_comparison(self):
         """Renderizar comparación climática"""
-        st.header("Comparación Climática")
-        
-        comparison_data = self.data.get('comparison', pd.DataFrame())
-        
-        if not comparison_data.empty:
-            # Aplicar filtros
-            if self.filter_manager:
-                filtered_data = self.filter_manager.apply_filters(comparison_data)
-            else:
-                filtered_data = comparison_data
-            
-            # Gráficos de comparación
-            self.chart_component.render_climate_comparison(filtered_data, "Comparación Climática Detallada")
-        else:
-            st.warning("No hay datos de comparación climática disponibles.")
+        strategy = ClimateComparisonStrategy()
+        self.analysis_context.execute_analysis(strategy)
     
     def render_configuration(self):
         """Renderizar página de configuración"""
@@ -403,16 +351,14 @@ class MeteoPandaDashboard:
             st.subheader("Configuración de Datos")
             
             # Información de la base de datos
-            st.write("**Base de datos:** DuckDB")
-            st.write("**Archivo:** meteopanda.duckdb")
+            st.write("**Base de datos:** DuckDB")         #ToDoo: No hardcodearlo
+            st.write("**Archivo:** meteopanda.duckdb")    #ToDoo: No hardcodearlo
             
             # Botones de control
             if st.button("Limpiar Caché"):
                 self.data_manager.clear_cache()
                 st.success("Caché limpiado correctamente")
             
-            if st.button("Verificar Datos"):
-                self._show_system_stats()
         
         with col2:
             st.subheader("Información del Sistema")

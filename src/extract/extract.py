@@ -36,7 +36,6 @@ def load_city_config(config_path: str) -> tuple[List[CityConfigDTO], str, str, s
     with open(config_path, "r") as f:
         cfg = yaml.safe_load(f)
     cities = [CityConfigDTO(**c) for c in cfg["cities"]]
-    # Obtener la región de la primera ciudad (todas deberían tener la misma región o podemos usar "Mixed")
     region = cities[0].region if cities else "Unknown"
     return cities, cfg["start_date"], cfg["end_date"], region
 
@@ -51,7 +50,7 @@ def extract_meteostat_data(city: CityConfigDTO, start_date: str, end_date: str, 
             df["source"] = "meteostat"
             df["city"] = city.name
             df["region"] = region
-            df["station"] = station_id  # Agregar ID de estación
+            df["station"] = station_id
             return df
     except Exception as e:
         print(f"Error extrayendo datos de Meteostat para {city.name}: {e}")
@@ -68,21 +67,12 @@ def extract_aemet_data(city: CityConfigDTO, start_date: str, end_date: str, regi
             df["source"] = "aemet"
             df["city"] = city.name
             df["region"] = region
-            df["station"] = station_id  # Agregar ID de estación
+            df["station"] = station_id
             return df
     except Exception as e:
         print(f"Error extrayendo datos de AEMET para {city.name}: {e}")
     return pd.DataFrame()
 
-def standardize_weather_data(df: pd.DataFrame, source: str) -> pd.DataFrame: #ToDo: Implementar
-    """ 
-    Estandariza los datos meteorológicos al formato común.
-    """
-    if source == "meteostat":
-        return df
-    elif source == "aemet":
-        return df  
-    return df
 
 def create_weather_raw_schema():
     """
@@ -193,14 +183,12 @@ def extract_and_load(config_path: str):
         print(f"Extrayendo datos de Meteostat {city.name}")
         meteostat_df = extract_meteostat_data(city, start_date, end_date, city_region)
         if not meteostat_df.empty:
-            #meteostat_df = standardize_weather_data(meteostat_df, "meteostat")
             all_data.append(meteostat_df)
         
         # Extraer datos de AEMET
         print(f"Extrayendo datos de AEMET {city.name}")
         aemet_df = extract_aemet_data(city, start_date, end_date, city_region)
         if not aemet_df.empty:
-            #aemet_df = standardize_weather_data(aemet_df, "aemet")
             all_data.append(aemet_df)
         
     
