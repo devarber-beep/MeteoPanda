@@ -55,6 +55,7 @@ class MeteoPandaDashboard:
         self.data_manager = DataManager()
         self.config = load_config()
         self.data = None
+        self.loaded_data_types = set()  # Track qué tipos de datos están cargados
         
         # Componentes de UI
         self.table_component = AdvancedTableComponent()
@@ -68,20 +69,33 @@ class MeteoPandaDashboard:
         self.analysis_context = None
     
     def initialize(self):
-        """Inicializar el dashboard"""
-        # Cargar datos
+        """Inicializar el dashboard con lazy loading"""
+        # Verificar si ya está inicializado en session_state
+        if 'dashboard_initialized' in st.session_state and st.session_state['dashboard_initialized']:
+            # Usar datos ya cargados
+            self.data = st.session_state.get('dashboard_data', {})
+            self.loaded_data_types = st.session_state.get('loaded_data_types', set())
+            self.map_component = st.session_state.get('map_component')
+            self.filter_manager = st.session_state.get('filter_manager')
+            self.analysis_context = st.session_state.get('analysis_context')
+            return True
+        
+        # Cargar solo datos esenciales
         with st.spinner("Inicializando dashboard..."):
-            self.data = self.data_manager.get_all_data()
+            self.data = self.data_manager.get_essential_data()
             
             if self.data is None:
-                st.error("Error al cargar los datos. Verifica la conexión a la base de datos.")
+                st.error("Error al cargar los datos esenciales. Verifica la conexión a la base de datos.")
                 return False
             
-            # Inicializar componentes que dependen de datos
+            # Marcar datos esenciales como cargados
+            self.loaded_data_types.update(['coords', 'summary'])
+            
+            # Inicializar componentes que dependen de datos esenciales
             if self.data.get('coords') is not None:
                 self.map_component = AdvancedMapComponent(self.data['coords'])
             
-            # Inicializar filtros
+            # Inicializar filtros con datos esenciales
             self.filter_manager = FilterManager(self.data)
             
             # Inicializar contexto de análisis
@@ -91,7 +105,40 @@ class MeteoPandaDashboard:
                 self.chart_component
             )
             
+            # Guardar en session_state para evitar reinicializaciones
+            st.session_state['dashboard_initialized'] = True
+            st.session_state['dashboard_data'] = self.data
+            st.session_state['loaded_data_types'] = self.loaded_data_types
+            st.session_state['map_component'] = self.map_component
+            st.session_state['filter_manager'] = self.filter_manager
+            st.session_state['analysis_context'] = self.analysis_context
+            
             return True
+
+    def get_data_lazy(self, data_type: str) -> pd.DataFrame:
+        """Obtener datos con lazy loading real"""
+        # Si ya está cargado, devolverlo
+        if data_type in self.loaded_data_types and self.data.get(data_type) is not None:
+            return self.data[data_type]
+        
+        # Cargar bajo demanda
+        data = self.data_manager.get_data_on_demand(data_type)
+        if data is not None:
+            # Inicializar data si es None
+            if self.data is None:
+                self.data = {}
+            
+            # Guardar en cache local y session_state
+            self.data[data_type] = data
+            self.loaded_data_types.add(data_type)
+            
+            # Actualizar session_state
+            st.session_state['dashboard_data'] = self.data
+            st.session_state['loaded_data_types'] = self.loaded_data_types
+            
+            return data
+        else:
+            return pd.DataFrame()  # Devolver DataFrame vacío si falla
     
     def render_header(self):
         """Renderizar cabecera del dashboard"""
@@ -102,7 +149,7 @@ class MeteoPandaDashboard:
         with st.sidebar:           
             # Renderizar filtros
             if self.filter_manager:
-                _ = self.filter_manager.render_filters()
+                rendered_filters = self.filter_manager.render_filters()
             
             st.markdown("---")
             
@@ -114,6 +161,11 @@ class MeteoPandaDashboard:
             st.header("Controles")
             if st.button("Recargar Datos"):
                 self.data_manager.clear_cache()
+                # Limpiar session_state
+                for key in ['dashboard_initialized', 'dashboard_data', 'loaded_data_types', 
+                           'map_component', 'filter_manager', 'analysis_context']:
+                    if key in st.session_state:
+                        del st.session_state[key]
                 st.rerun()
 
     def render_navbar(self):
@@ -202,11 +254,9 @@ class MeteoPandaDashboard:
                 metric = self.map_component.render_metric_selector(map_type, "main")
             
             with col2:
-                # Renderizar solo el mapa seleccionado
+                # Renderizar solo el mapa seleccionado con lazy loading real
                 if not filtered_summary_data.empty:
-                    map_obj = self.map_component.render_map(filtered_summary_data, metric, map_type)
-                    from streamlit_folium import st_folium
-                    st_folium(map_obj, height=500, width=900, key=f"main_map_{map_type}")
+                    self.map_component.render_map_with_lazy_loading(filtered_summary_data, metric, map_type, "main")
                 else:
                     st.warning("No hay datos para mostrar en el mapa.")
         
@@ -225,7 +275,7 @@ class MeteoPandaDashboard:
             st.dataframe(city_summary, use_container_width=True)
     
     def render_data_table(self):
-        """Renderizar tabla de datos avanzada"""
+        """Renderizar tabla de datos avanzada con lazy loading"""
         st.header("Tabla de Datos Avanzada")
         
         # Selector de tipo de datos
@@ -246,8 +296,8 @@ class MeteoPandaDashboard:
             help="Selecciona el tipo de datos a mostrar"
         )
         
-        # Obtener datos seleccionados
-        selected_data = self.data.get(selected_data_type, pd.DataFrame())
+        # Obtener datos con lazy loading real
+        selected_data = self.get_data_lazy(selected_data_type)
         
         if not selected_data.empty:
             # Aplicar filtros directamente
@@ -268,7 +318,7 @@ class MeteoPandaDashboard:
             st.warning(f"No hay datos disponibles para {data_types[selected_data_type]}.")
     
     def render_interactive_maps(self):
-        """Renderizar mapas interactivos"""
+        """Renderizar mapas interactivos con lazy loading real"""
         st.header("Mapas Interactivos")
         
         if not self.map_component:
@@ -284,62 +334,90 @@ class MeteoPandaDashboard:
         else:
             metric = 'default'
         
-        # Renderizar mapa con lazy loading - solo el seleccionado
+        # Renderizar mapa con lazy loading real - solo el seleccionado
         st.subheader("Visualización del Mapa")
         
-        # Obtener datos según el tipo de mapa seleccionado
+        # Obtener datos con lazy loading según el tipo de mapa seleccionado
         if map_type == 'temperature':
-            map_data = self.data.get('summary', pd.DataFrame())
+            map_data = self.get_data_lazy('summary')
         elif map_type == 'precipitation':
-            map_data = self.data.get('summary', pd.DataFrame())
+            map_data = self.get_data_lazy('summary')
         elif map_type == 'alerts':
-            map_data = self.data.get('alerts', pd.DataFrame())
+            map_data = self.get_data_lazy('alerts')
         elif map_type == 'comparison':
-            map_data = self.data.get('comparison', pd.DataFrame())
+            map_data = self.get_data_lazy('comparison')
         else:
-            map_data = self.data.get('summary', pd.DataFrame())
+            map_data = self.get_data_lazy('summary')
         
         # Aplicar filtros
         if self.filter_manager and not map_data.empty:
             map_data = self.filter_manager.apply_filters(map_data)
         
-        # Renderizar solo el mapa seleccionado
+        # Renderizar solo el mapa seleccionado con lazy loading real
         if not map_data.empty:
-            map_obj = self.map_component.render_map(map_data, metric, map_type)
-            from streamlit_folium import st_folium
-            st_folium(map_obj, height=600, width=1000, key=f"interactive_map_{map_type}")
+            self.map_component.render_map_with_lazy_loading(map_data, metric, map_type, "interactive")
         else:
             st.warning("No hay datos para mostrar en el mapa con los filtros seleccionados.")
     
     def render_trend_analysis(self):
-        """Renderizar análisis de tendencias"""
-        strategy = TrendAnalysisStrategy()
-        self.analysis_context.execute_analysis(strategy)
+        """Renderizar análisis de tendencias con lazy loading"""
+        # Cargar datos necesarios bajo demanda
+        trends_data = self.get_data_lazy('trends')
+        if not trends_data.empty:
+            # Actualizar contexto de análisis con datos cargados
+            self.analysis_context.data['trends'] = trends_data
+            strategy = TrendAnalysisStrategy()
+            self.analysis_context.execute_analysis(strategy)
+        else:
+            st.warning("No hay datos de tendencias disponibles.")
     
     def render_temperature_analysis(self):
-        """Renderizar análisis específico de temperatura"""
+        """Renderizar análisis específico de temperatura con lazy loading"""
+        # Los datos de temperatura están en summary, ya cargados
         strategy = TemperatureAnalysisStrategy()
         self.analysis_context.execute_analysis(strategy)
     
     def render_precipitation_analysis(self):
-        """Renderizar análisis específico de precipitación"""
+        """Renderizar análisis específico de precipitación con lazy loading"""
+        # Los datos de precipitación están en summary, ya cargados
         strategy = PrecipitationAnalysisStrategy()
         self.analysis_context.execute_analysis(strategy)
     
     def render_seasonal_analysis(self):
-        """Renderizar análisis estacional"""
-        strategy = SeasonalAnalysisStrategy()
-        self.analysis_context.execute_analysis(strategy)
+        """Renderizar análisis estacional con lazy loading"""
+        # Cargar datos estacionales bajo demanda
+        seasonal_data = self.get_data_lazy('seasonal')
+        if not seasonal_data.empty:
+            # Actualizar contexto de análisis con datos cargados
+            self.analysis_context.data['seasonal'] = seasonal_data
+            strategy = SeasonalAnalysisStrategy()
+            self.analysis_context.execute_analysis(strategy)
+        else:
+            st.warning("No hay datos estacionales disponibles.")
     
     def render_alert_analysis(self):
-        """Renderizar análisis de alertas"""
-        strategy = AlertAnalysisStrategy()
-        self.analysis_context.execute_analysis(strategy)
+        """Renderizar análisis de alertas con lazy loading"""
+        # Cargar datos de alertas bajo demanda
+        alerts_data = self.get_data_lazy('alerts')
+        if not alerts_data.empty:
+            # Actualizar contexto de análisis con datos cargados
+            self.analysis_context.data['alerts'] = alerts_data
+            strategy = AlertAnalysisStrategy()
+            self.analysis_context.execute_analysis(strategy)
+        else:
+            st.warning("No hay datos de alertas disponibles.")
     
     def render_climate_comparison(self):
-        """Renderizar comparación climática"""
-        strategy = ClimateComparisonStrategy()
-        self.analysis_context.execute_analysis(strategy)
+        """Renderizar comparación climática con lazy loading"""
+        # Cargar datos de comparación bajo demanda
+        comparison_data = self.get_data_lazy('comparison')
+        if not comparison_data.empty:
+            # Actualizar contexto de análisis con datos cargados
+            self.analysis_context.data['comparison'] = comparison_data
+            strategy = ClimateComparisonStrategy()
+            self.analysis_context.execute_analysis(strategy)
+        else:
+            st.warning("No hay datos de comparación climática disponibles.")
     
     def render_configuration(self):
         """Renderizar página de configuración"""

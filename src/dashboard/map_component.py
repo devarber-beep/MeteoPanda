@@ -18,14 +18,14 @@ class AdvancedMapComponent:
     
     def render_map(self, data: pd.DataFrame, metric: str = 'avg_temp', 
                    map_type: str = 'temperature', height: int = 600) -> folium.Map:
-        """Renderizar mapa con métricas y funcionalidades avanzadas"""
+        """Renderizar mapa con métricas y funcionalidades avanzadas - optimizado para lazy loading"""
         
-        # Crear clave única para el caché del mapa
-        cache_key = f"map_{map_type}_{metric}_{len(data)}"
+        # Crear clave única para el caché del mapa (más específica)
+        cache_key = f"map_{map_type}_{metric}_{len(data)}_{hash(str(data.columns.tolist()))}"
         
         # Verificar si el mapa ya está en session_state
         if cache_key in st.session_state:
-            # Verificar si los datos han cambiado
+            # Verificar si los datos han cambiado (más eficiente)
             current_data_hash = str(hash(str(data.values.tobytes()) + str(data.index.tolist())))
             if st.session_state[cache_key]['data_hash'] == current_data_hash:
                 # Usar mapa desde caché
@@ -38,24 +38,27 @@ class AdvancedMapComponent:
             # Fallback para índices que no soportan tobytes()
             data_hash = str(hash(str(data.values.tobytes()) + str(data.index.values.tolist())))
         
-        # Crear mapa base
+        # Crear mapa base (usar caché si es posible)
         m = self._create_base_map(map_type)
         
         if data.empty:
             st.warning("No hay datos para mostrar en el mapa.")
             return m
         
-        # Añadir marcadores según el tipo de mapa
-        if map_type == 'temperature':
-            self._add_temperature_markers(m, data, metric)
-        elif map_type == 'precipitation':
-            self._add_precipitation_markers(m, data, metric)
-        elif map_type == 'alerts':
-            self._add_alert_markers(m, data)
-        elif map_type == 'comparison':
-            self._add_comparison_markers(m, data)
+        # Procesar solo los datos necesarios para este tipo de mapa
+        processed_data = self._process_data_for_map_type(data, map_type)
         
-        # Añadir controles adicionales
+        # Añadir marcadores según el tipo de mapa (solo con datos procesados)
+        if map_type == 'temperature':
+            self._add_temperature_markers(m, processed_data, metric)
+        elif map_type == 'precipitation':
+            self._add_precipitation_markers(m, processed_data, metric)
+        elif map_type == 'alerts':
+            self._add_alert_markers(m, processed_data)
+        elif map_type == 'comparison':
+            self._add_comparison_markers(m, processed_data)
+        
+        # Añadir controles adicionales solo si es necesario
         self._add_map_controls(m)
         
         # Guardar mapa en session_state para evitar recreaciones
@@ -448,25 +451,57 @@ class AdvancedMapComponent:
         return selected_metric
     
     def render_map_with_lazy_loading(self, data: pd.DataFrame, metric: str, map_type: str, context: str = "main") -> None:
-        """Renderizar mapa con lazy loading - solo renderiza el mapa seleccionado"""
+        """Renderizar mapa con lazy loading real - solo procesa datos del mapa seleccionado"""
         map_key = f"selected_map_{context}"
         current_map = st.session_state.get(map_key, 'temperature')
         
-        # Solo renderizar si el mapa seleccionado coincide con el tipo actual
+        # Solo procesar y renderizar si el mapa seleccionado coincide con el tipo actual
         if current_map == map_type:
             if not data.empty:
-                map_obj = self.render_map(data, metric, map_type)
-                from streamlit_folium import st_folium
+                # Procesar solo los datos necesarios para este tipo de mapa
+                processed_data = self._process_data_for_map_type(data, map_type)
                 
-                # Usar key única para cada contexto y tipo de mapa
-                map_component_key = f"map_{context}_{map_type}"
-                st_folium(map_obj, height=600, width=1000, key=map_component_key)
+                if not processed_data.empty:
+                    map_obj = self.render_map(processed_data, metric, map_type)
+                    from streamlit_folium import st_folium
+                    
+                    # Usar key única para cada contexto y tipo de mapa
+                    map_component_key = f"map_{context}_{map_type}"
+                    st_folium(map_obj, height=600, width=1000, key=map_component_key)
+                else:
+                    st.warning(f"No hay datos procesados disponibles para el mapa de {map_type}")
             else:
                 st.warning(f"No hay datos disponibles para el mapa de {map_type}")
         else:
-            # Mostrar placeholder mientras se carga
-            with st.spinner(f"Cargando mapa de {map_type}..."):
-                st.info(f"Mapa de {map_type} seleccionado. Cambiando visualización...")
-                # Pequeño delay para mostrar el feedback
-                import time
-                time.sleep(0.1)
+            # Mostrar placeholder real - no procesar datos innecesarios
+            st.info(f"Mapa de {map_type} seleccionado. Los datos se cargarán cuando se seleccione este tipo de mapa.")
+    
+    def _process_data_for_map_type(self, data: pd.DataFrame, map_type: str) -> pd.DataFrame:
+        """Procesar solo los datos necesarios para el tipo de mapa específico"""
+        if data.empty:
+            return data
+        
+        # Filtrar columnas según el tipo de mapa para optimizar rendimiento
+        if map_type == 'temperature':
+            # Solo columnas relacionadas con temperatura
+            temp_columns = [col for col in data.columns if any(x in col.lower() for x in ['temp', 'city', 'year', 'month'])]
+            return data[temp_columns] if temp_columns else data
+        
+        elif map_type == 'precipitation':
+            # Solo columnas relacionadas con precipitación
+            precip_columns = [col for col in data.columns if any(x in col.lower() for x in ['precip', 'rain', 'city', 'year', 'month'])]
+            return data[precip_columns] if precip_columns else data
+        
+        elif map_type == 'alerts':
+            # Solo columnas relacionadas con alertas
+            alert_columns = [col for col in data.columns if any(x in col.lower() for x in ['alert', 'severity', 'city', 'date'])]
+            return data[alert_columns] if alert_columns else data
+        
+        elif map_type == 'comparison':
+            # Solo columnas relacionadas con comparación climática
+            comparison_columns = [col for col in data.columns if any(x in col.lower() for x in ['climate', 'classification', 'city', 'temp', 'precip'])]
+            return data[comparison_columns] if comparison_columns else data
+        
+        else:
+            # Para otros tipos, devolver datos completos
+            return data

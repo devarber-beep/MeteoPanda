@@ -205,11 +205,8 @@ class AdvancedTableComponent:
         
         # Mostrar tabla
         if not table_data.empty:
-            # Aplicar estilos a la tabla
-            styled_table = self._apply_table_styles(table_data.iloc[start_idx:end_idx])
-            
             st.dataframe(
-                styled_table,
+                table_data.iloc[start_idx:end_idx],
                 use_container_width=True,
                 hide_index=True
             )

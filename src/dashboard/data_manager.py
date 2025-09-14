@@ -54,25 +54,30 @@ class DataManager:
             st.error(f"Error en consulta: {str(e)}")
             return None
     
-    def load_summary_data(self) -> Optional[pd.DataFrame]:
+    @st.cache_data(ttl=7200)
+    def load_summary_data(_self) -> Optional[pd.DataFrame]:
         """Cargar datos de resumen anual"""
-        return self.execute_query("SELECT * FROM gold.city_yearly_summary")
+        return _self.execute_query("SELECT * FROM gold.city_yearly_summary")
     
-    def load_extreme_data(self) -> Optional[pd.DataFrame]:
+    @st.cache_data(ttl=7200)
+    def load_extreme_data(_self) -> Optional[pd.DataFrame]:
         """Cargar datos de días extremos"""
-        return self.execute_query("SELECT * FROM gold.city_extreme_days")
+        return _self.execute_query("SELECT * FROM gold.city_extreme_days")
     
-    def load_trends_data(self) -> Optional[pd.DataFrame]:
+    @st.cache_data(ttl=7200)
+    def load_trends_data(_self) -> Optional[pd.DataFrame]:
         """Cargar datos de tendencias"""
-        return self.execute_query("SELECT * FROM gold.weather_trends")
+        return _self.execute_query("SELECT * FROM gold.weather_trends")
     
-    def load_climate_data(self) -> Optional[pd.DataFrame]:
+    @st.cache_data(ttl=7200)
+    def load_climate_data(_self) -> Optional[pd.DataFrame]:
         """Cargar datos de perfiles climáticos"""
-        return self.execute_query("SELECT * FROM gold.climate_profiles")
+        return _self.execute_query("SELECT * FROM gold.climate_profiles")
     
-    def load_coordinates_data(self) -> Optional[pd.DataFrame]:
+    @st.cache_data(ttl=7200)
+    def load_coordinates_data(_self) -> Optional[pd.DataFrame]:
         """Cargar coordenadas de ciudades"""
-        return self.execute_query(
+        return _self.execute_query(
             """
             SELECT DISTINCT city, lat, lon 
             FROM silver.weather_cleaned
@@ -80,21 +85,61 @@ class DataManager:
             """
         )
     
-    def load_alerts_data(self) -> Optional[pd.DataFrame]:
+    @st.cache_data(ttl=7200)
+    def load_alerts_data(_self) -> Optional[pd.DataFrame]:
         """Cargar datos de alertas meteorológicas"""
-        return self.execute_query("SELECT * FROM gold.weather_alerts")
-    
-    def load_seasonal_data(self) -> Optional[pd.DataFrame]:
-        """Cargar datos de análisis estacional"""
-        return self.execute_query("SELECT * FROM gold.seasonal_analysis")
-    
-    def load_comparison_data(self) -> Optional[pd.DataFrame]:
-        """Cargar datos de comparación climática"""
-        return self.execute_query("SELECT * FROM gold.climate_comparison")
+        return _self.execute_query("SELECT * FROM gold.weather_alerts")
     
     @st.cache_data(ttl=7200)
+    def load_seasonal_data(_self) -> Optional[pd.DataFrame]:
+        """Cargar datos de análisis estacional"""
+        return _self.execute_query("SELECT * FROM gold.seasonal_analysis")
+    
+    @st.cache_data(ttl=7200)
+    def load_comparison_data(_self) -> Optional[pd.DataFrame]:
+        """Cargar datos de comparación climática"""
+        return _self.execute_query("SELECT * FROM gold.climate_comparison")
+    
+    @st.cache_data(ttl=7200)
+    def get_essential_data(_self) -> Dict[str, pd.DataFrame]:
+        """Cargar solo datos esenciales para la inicialización"""
+        with st.spinner("Cargando datos esenciales..."):
+            data = {
+                'coords': _self.load_coordinates_data(),
+                'summary': _self.load_summary_data()
+            }
+            
+            # Verificar que los datos esenciales se cargaron correctamente
+            failed_loads = [k for k, v in data.items() if v is None]
+            if failed_loads:
+                st.warning(f"No se pudieron cargar algunos datos esenciales: {', '.join(failed_loads)}")
+            
+            return data
+
+    @st.cache_data(ttl=7200)
+    def get_data_on_demand(_self, data_type: str) -> Optional[pd.DataFrame]:
+        """Cargar datos específicos bajo demanda (lazy loading real)"""
+        data_loaders = {
+            'summary': _self.load_summary_data,
+            'extreme': _self.load_extreme_data,
+            'trends': _self.load_trends_data,
+            'climate': _self.load_climate_data,
+            'coords': _self.load_coordinates_data,
+            'alerts': _self.load_alerts_data,
+            'seasonal': _self.load_seasonal_data,
+            'comparison': _self.load_comparison_data
+        }
+        
+        if data_type in data_loaders:
+            with st.spinner(f"Cargando datos de {data_type}..."):
+                return data_loaders[data_type]()
+        else:
+            st.error(f"Tipo de datos no válido: {data_type}")
+            return None
+
+    @st.cache_data(ttl=7200)
     def get_all_data(_self) -> Dict[str, pd.DataFrame]:
-        """Cargar todos los datos principales"""
+        """Cargar todos los datos principales (método legacy para compatibilidad)"""
         with st.spinner("Cargando datos..."):
             data = {
                 'summary': _self.load_summary_data(),
