@@ -18,6 +18,7 @@ import threading
 import ssl
 
 from .dto import DailyWeatherDTO, CityConfigDTO
+from ..utils.logging_config import get_logger, log_api_request, log_performance_warning, log_validation_warning
 import yaml
 
 # Cargar API key
@@ -26,6 +27,9 @@ AEMET_API_KEY = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJkYW5pZWwuYmFyYmVyb2pAZ21haWwuY2
 
 AEMET_BASE_URL = "https://opendata.aemet.es/opendata/api"
 HEADERS = {"api_key": AEMET_API_KEY}
+
+# Configurar logger
+logger = get_logger("aemet_api")
 
 # Paths
 UTILS_PATH = Path("data/utils")
@@ -280,11 +284,12 @@ def log_rate_limiter_status():
     # Calcular porcentaje de uso
     usage_percentage = (stats['current_requests'] / stats['max_requests']) * 100
     if usage_percentage > 80:
-        print(f"   ⚠️  Uso alto: {usage_percentage:.1f}%")
+        log_performance_warning(logger, "Rate Limiter AEMET", usage_percentage, threshold=80)
+        logger.warning(f"Uso alto del rate limiter: {usage_percentage:.1f}%", extra_data=stats)
     elif usage_percentage > 60:
-        print(f"   ⚡ Uso moderado: {usage_percentage:.1f}%")
+        logger.info(f"Uso moderado del rate limiter: {usage_percentage:.1f}%", extra_data=stats)
     else:
-        print(f"   ✅ Uso normal: {usage_percentage:.1f}%")
+        logger.info(f"Uso normal del rate limiter: {usage_percentage:.1f}%", extra_data=stats)
 
 
 def get_optimal_rate_limiter_config() -> Dict[str, Any]:
@@ -313,16 +318,11 @@ def log_connection_pool_status():
     """
     stats = get_connection_pool_stats()
     
-    print(f"🔗 Connection Pool Status:")
-    print(f"   Pool connections: {stats['pool_connections']}")
-    print(f"   Pool maxsize: {stats['pool_maxsize']}")
-    print(f"   Active connections: {stats.get('active_connections', 'N/A')}")
-    print(f"   Timeout: {stats['timeout']}")
+    logger.info(f"Connection Pool Status: {stats['pool_connections']}/{stats['pool_maxsize']} conexiones", extra_data=stats)
     
     if 'retry_config' in stats:
         retry = stats['retry_config']
-        print(f"   Retry config: {retry['max_retries']} max, {retry['backoff_factor']} backoff")
-        print(f"   Retry status codes: {retry['status_forcelist']}")
+        logger.debug(f"Retry config: {retry['max_retries']} max, {retry['backoff_factor']} backoff", extra_data=retry)
 
 
 def configure_connection_pool(
@@ -502,14 +502,20 @@ def retry_with_http_status_handling(
                     if response.status_code == 429:  # Too Many Requests
                         # Para rate limiting, usar un delay más largo
                         delay = min(30.0 * (exponential_base ** attempt), max_delay)
-                        print(f"Rate limit alcanzado (429). Esperando {delay:.2f} segundos antes del reintento {attempt + 1}...")
+                        log_api_request(logger, "AEMET", url, response.status_code, 
+                                      rate_limited=True, retry_attempt=attempt + 1, delay=delay)
+                        logger.warning(f"Rate limit alcanzado (429). Esperando {delay:.2f} segundos antes del reintento {attempt + 1}...")
                     elif response.status_code in [500, 502, 503, 504]:  # Server errors
                         # Para errores del servidor, usar delay normal
                         delay = min(base_delay * (exponential_base ** attempt), max_delay)
-                        print(f"Error del servidor ({response.status_code}). Reintentando en {delay:.2f} segundos...")
+                        log_api_request(logger, "AEMET", url, response.status_code, 
+                                      server_error=True, retry_attempt=attempt + 1, delay=delay)
+                        logger.warning(f"Error del servidor ({response.status_code}). Reintentando en {delay:.2f} segundos...")
                     else:
                         # Para otros errores HTTP, no reintentar
-                        print(f"Error HTTP {response.status_code}: {e}")
+                        log_api_request(logger, "AEMET", url, response.status_code, 
+                                      error=True, error_message=str(e))
+                        logger.error(f"Error HTTP {response.status_code}: {e}")
                         raise
                     
                     # Añadir jitter si está habilitado
@@ -549,6 +555,9 @@ def make_aemet_request(url: str, description: str = "petición AEMET") -> reques
     try:
         # Usar el connection pool en lugar de requests directo
         response = AEMET_CONNECTION_POOL.get(url, headers=HEADERS)
+        
+        # Log de la petición API
+        log_api_request(logger, "AEMET", url, response.status_code, description=description)
         
         # Si es un error HTTP, raise la excepción para que el decorador la maneje
         if response.status_code >= 400:

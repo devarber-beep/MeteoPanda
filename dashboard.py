@@ -12,6 +12,13 @@ from streamlit_option_menu import option_menu
 # Añadir el directorio src al path para importar módulos
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
+# Configurar logging antes de importar otros módulos
+from src.utils.logging_config import setup_logging, get_logger, log_operation_start, log_operation_success, log_operation_error, log_configuration_loaded, log_and_show_warning, log_and_show_error
+
+# Configurar logging
+setup_logging(level="INFO", log_file="logs/dashboard.log", console_output=True, structured=True)
+logger = get_logger("dashboard")
+
 # Importar componentes del dashboard
 from src.dashboard.data_manager import DataManager
 from src.dashboard.filter_manager import FilterManager
@@ -42,8 +49,11 @@ def load_config():
     """Cargar configuración de ciudades"""
     try:
         with open('config/config.yaml', 'r', encoding='utf-8') as file:
-            return yaml.safe_load(file)
+            config = yaml.safe_load(file)
+            log_configuration_loaded(logger, "ciudades", cities_count=len(config.get('cities', [])))
+            return config
     except Exception as e:
+        log_operation_error(logger, "carga de configuración", e, config_file="config/config.yaml")
         st.error(f"Error cargando configuración: {str(e)}")
         return None
 
@@ -58,7 +68,7 @@ class MeteoPandaDashboard:
         self.loaded_data_types = set()  # Track qué tipos de datos están cargados
         
         # Componentes de UI
-        self.table_component = AdvancedTableComponent()
+        self.table_component = AdvancedTableComponent(items_per_page=50)
         self.map_component = None
         self.chart_component = AdvancedChartComponent()
         
@@ -67,24 +77,39 @@ class MeteoPandaDashboard:
         
         # Contexto de análisis
         self.analysis_context = None
+        
+        # Configuración de rendimiento
+        self.performance_config = {
+            'enable_lazy_loading': True,
+            'enable_caching': True,
+            'max_cache_size': 1000,
+            'items_per_page': 50
+        }
     
     def initialize(self):
         """Inicializar el dashboard con lazy loading"""
         # Verificar si ya está inicializado en session_state
         if 'dashboard_initialized' in st.session_state and st.session_state['dashboard_initialized']:
+            logger.info("Dashboard ya inicializado, usando datos de session_state")
             # Usar datos ya cargados
             self.data = st.session_state.get('dashboard_data', {})
             self.loaded_data_types = st.session_state.get('loaded_data_types', set())
             self.map_component = st.session_state.get('map_component')
             self.filter_manager = st.session_state.get('filter_manager')
             self.analysis_context = st.session_state.get('analysis_context')
+            
+            # Asegurar que el data_manager esté asignado al table_component
+            self.table_component.set_data_manager(self.data_manager)
+            
             return True
         
         # Cargar solo datos esenciales
+        log_operation_start(logger, "inicialización del dashboard")
         with st.spinner("Inicializando dashboard..."):
             self.data = self.data_manager.get_essential_data()
             
             if self.data is None:
+                log_operation_error(logger, "inicialización del dashboard", Exception("No se pudieron cargar datos esenciales"))
                 st.error("Error al cargar los datos esenciales. Verifica la conexión a la base de datos.")
                 return False
             
@@ -97,6 +122,9 @@ class MeteoPandaDashboard:
             
             # Inicializar filtros con datos esenciales
             self.filter_manager = FilterManager(self.data)
+            
+            # Asignar data_manager al table_component para paginación real
+            self.table_component.set_data_manager(self.data_manager)
             
             # Inicializar contexto de análisis
             self.analysis_context = AnalysisContext(
@@ -113,6 +141,10 @@ class MeteoPandaDashboard:
             st.session_state['filter_manager'] = self.filter_manager
             st.session_state['analysis_context'] = self.analysis_context
             
+            log_operation_success(logger, "inicialización del dashboard", 
+                                loaded_data_types=list(self.loaded_data_types),
+                                has_map_component=self.map_component is not None,
+                                has_filter_manager=self.filter_manager is not None)
             return True
 
     def get_data_lazy(self, data_type: str) -> pd.DataFrame:
@@ -155,18 +187,26 @@ class MeteoPandaDashboard:
             
             # Información del sistema
             st.header("Información")
-            st.write("**Versión:** 2.0 Pro")
+            st.write("**Versión:** 2.0")
+            st.write("**Dev by:** @devarber")
+            st.write("**Linkdn:**  https://www.linkedin.com/in/danielbarero/")
+            st.write("**Github:**  https://github.com/devarber-beep")
+
+
             
             # Botones de control
             st.header("Controles")
             if st.button("Recargar Datos"):
                 self.data_manager.clear_cache()
+                if self.map_component:
+                    self.map_component.clear_cache()
                 # Limpiar session_state
                 for key in ['dashboard_initialized', 'dashboard_data', 'loaded_data_types', 
                            'map_component', 'filter_manager', 'analysis_context']:
                     if key in st.session_state:
                         del st.session_state[key]
                 st.rerun()
+    
 
     def render_navbar(self):
         """Renderizar navegación superior con option_menu y lazy loading"""
@@ -233,7 +273,8 @@ class MeteoPandaDashboard:
         st.header("Dashboard Principal")
         
         if not self.data or self.data.get('summary') is None:
-            st.warning("No hay datos disponibles para mostrar el dashboard.")
+            log_and_show_warning(logger, "No hay datos disponibles para mostrar el dashboard.", 
+                               data_keys=list(self.data.keys()) if self.data else None)
             return
         
         # Aplicar filtros a los datos del resumen
@@ -258,7 +299,8 @@ class MeteoPandaDashboard:
                 if not filtered_summary_data.empty:
                     self.map_component.render_map_with_lazy_loading(filtered_summary_data, metric, map_type, "main")
                 else:
-                    st.warning("No hay datos para mostrar en el mapa.")
+                    log_and_show_warning(logger, "No hay datos para mostrar en el mapa.", 
+                                       map_type=map_type, filtered_records=len(filtered_summary_data))
         
         # Resumen de datos por ciudad
         st.subheader("Resumen por Ciudad")
@@ -275,10 +317,14 @@ class MeteoPandaDashboard:
             st.dataframe(city_summary, use_container_width=True)
     
     def render_data_table(self):
-        """Renderizar tabla de datos avanzada con lazy loading"""
+        """Renderizar tabla de datos avanzada con paginación real"""
         st.header("Tabla de Datos Avanzada")
         
-        # Selector de tipo de datos
+        # Asegurar que el data_manager esté asignado al table_component
+        if not hasattr(self.table_component, 'data_manager') or self.table_component.data_manager is None:
+            self.table_component.set_data_manager(self.data_manager)
+        
+        # Selector de tipo de datos con key única para evitar recargas
         data_types = {
             'summary': 'Resumen Anual',
             'extreme': 'Días Extremos',
@@ -289,43 +335,37 @@ class MeteoPandaDashboard:
             'comparison': 'Comparación Climática'
         }
         
+        # Usar key única para evitar re-renderizados
         selected_data_type = st.selectbox(
             "Tipo de Datos",
             options=list(data_types.keys()),
             format_func=lambda x: data_types[x],
-            help="Selecciona el tipo de datos a mostrar"
+            help="Selecciona el tipo de datos a mostrar con paginación real",
+            key="data_type_selector_main"
         )
         
-        # Obtener datos con lazy loading real
-        selected_data = self.get_data_lazy(selected_data_type)
+        # Obtener filtros activos
+        active_filters = self.filter_manager.active_filters if self.filter_manager else {}
         
-        if not selected_data.empty:
-            # Aplicar filtros directamente
-            if self.filter_manager:
-                filtered_data = self.filter_manager.apply_filters(selected_data)
-                active_filters = self.filter_manager.active_filters
-            else:
-                filtered_data = selected_data
-                active_filters = {}
-            
-            # Renderizar tabla
-            self.table_component.render_table(
-                filtered_data, 
-                active_filters,
-                f"Tabla de {data_types[selected_data_type]}"
+        # Renderizar tabla con paginación real solo si es necesario
+        if selected_data_type:
+            self.table_component.render_table_with_real_pagination(
+                data_type=selected_data_type,
+                filters=active_filters,
+                title=f"Tabla de {data_types[selected_data_type]}",
+                context="main"
             )
-        else:
-            st.warning(f"No hay datos disponibles para {data_types[selected_data_type]}.")
     
     def render_interactive_maps(self):
         """Renderizar mapas interactivos con lazy loading real"""
         st.header("Mapas Interactivos")
         
         if not self.map_component:
-            st.error("No se pudo inicializar el componente de mapas.")
+            log_and_show_error(logger, "No se pudo inicializar el componente de mapas.", 
+                             component="map_component", initialization_status="failed")
             return
         
-        # Selector de tipo de mapa
+        # Selector de tipo de mapa con key única
         map_type = self.map_component.render_map_selector("interactive")
         
         # Renderizar métrica solo para el mapa seleccionado
@@ -337,27 +377,40 @@ class MeteoPandaDashboard:
         # Renderizar mapa con lazy loading real - solo el seleccionado
         st.subheader("Visualización del Mapa")
         
-        # Obtener datos con lazy loading según el tipo de mapa seleccionado
-        if map_type == 'temperature':
-            map_data = self.get_data_lazy('summary')
-        elif map_type == 'precipitation':
-            map_data = self.get_data_lazy('summary')
-        elif map_type == 'alerts':
-            map_data = self.get_data_lazy('alerts')
-        elif map_type == 'comparison':
-            map_data = self.get_data_lazy('comparison')
-        else:
-            map_data = self.get_data_lazy('summary')
+        # Crear clave de caché para los datos del mapa
+        map_cache_key = f"map_data_{map_type}_{metric}"
         
-        # Aplicar filtros
-        if self.filter_manager and not map_data.empty:
-            map_data = self.filter_manager.apply_filters(map_data)
+        # Verificar si los datos ya están en caché
+        if map_cache_key in st.session_state:
+            map_data = st.session_state[map_cache_key]
+        else:
+            # Obtener datos con lazy loading según el tipo de mapa seleccionado
+            if map_type == 'temperature':
+                map_data = self.get_data_lazy('summary')
+            elif map_type == 'precipitation':
+                map_data = self.get_data_lazy('summary')
+            elif map_type == 'alerts':
+                map_data = self.get_data_lazy('alerts')
+            elif map_type == 'comparison':
+                map_data = self.get_data_lazy('comparison')
+            else:
+                map_data = self.get_data_lazy('summary')
+            
+            # Aplicar filtros
+            if self.filter_manager and not map_data.empty:
+                map_data = self.filter_manager.apply_filters(map_data)
+            
+            # Guardar en caché
+            st.session_state[map_cache_key] = map_data
         
         # Renderizar solo el mapa seleccionado con lazy loading real
         if not map_data.empty:
-            self.map_component.render_map_with_lazy_loading(map_data, metric, map_type, "interactive")
+            # Usar un contenedor para evitar re-renderizados innecesarios
+            with st.container():
+                self.map_component.render_map_with_lazy_loading(map_data, metric, map_type, "interactive")
         else:
-            st.warning("No hay datos para mostrar en el mapa con los filtros seleccionados.")
+            log_and_show_warning(logger, "No hay datos para mostrar en el mapa con los filtros seleccionados.", 
+                               map_type=map_type, metric=metric, filtered_records=len(map_data))
     
     def render_trend_analysis(self):
         """Renderizar análisis de tendencias con lazy loading"""
@@ -369,7 +422,8 @@ class MeteoPandaDashboard:
             strategy = TrendAnalysisStrategy()
             self.analysis_context.execute_analysis(strategy)
         else:
-            st.warning("No hay datos de tendencias disponibles.")
+            log_and_show_warning(logger, "No hay datos de tendencias disponibles.", 
+                               analysis_type="trends", data_loaded=False)
     
     def render_temperature_analysis(self):
         """Renderizar análisis específico de temperatura con lazy loading"""
@@ -393,7 +447,8 @@ class MeteoPandaDashboard:
             strategy = SeasonalAnalysisStrategy()
             self.analysis_context.execute_analysis(strategy)
         else:
-            st.warning("No hay datos estacionales disponibles.")
+            log_and_show_warning(logger, "No hay datos estacionales disponibles.", 
+                               analysis_type="seasonal", data_loaded=False)
     
     def render_alert_analysis(self):
         """Renderizar análisis de alertas con lazy loading"""
@@ -405,7 +460,8 @@ class MeteoPandaDashboard:
             strategy = AlertAnalysisStrategy()
             self.analysis_context.execute_analysis(strategy)
         else:
-            st.warning("No hay datos de alertas disponibles.")
+            log_and_show_warning(logger, "No hay datos de alertas disponibles.", 
+                               analysis_type="alerts", data_loaded=False)
     
     def render_climate_comparison(self):
         """Renderizar comparación climática con lazy loading"""
@@ -417,7 +473,8 @@ class MeteoPandaDashboard:
             strategy = ClimateComparisonStrategy()
             self.analysis_context.execute_analysis(strategy)
         else:
-            st.warning("No hay datos de comparación climática disponibles.")
+            log_and_show_warning(logger, "No hay datos de comparación climática disponibles.", 
+                               analysis_type="comparison", data_loaded=False)
     
     def render_configuration(self):
         """Renderizar página de configuración"""

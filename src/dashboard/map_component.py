@@ -4,41 +4,39 @@ Componente de mapa mejorado con funcionalidades avanzadas
 import streamlit as st
 import pandas as pd
 import folium
-from streamlit_folium import folium_static
 from typing import Dict, List, Optional, Any
 import numpy as np
 
+# Importar plugins de folium con manejo de errores
+try:
+    from folium import plugins
+except ImportError:
+    # Fallback si plugins no está disponible
+    plugins = None
+
 class AdvancedMapComponent:
-    """Componente de mapa avanzado con funcionalidades mejoradas"""
+    """Componente de mapa avanzado con funcionalidades mejoradas y caché inteligente"""
     
     def __init__(self, coords_df: pd.DataFrame):
         self.coords_df = coords_df
         self.map_center = [40.4168, -3.7038]  # Centrado en Madrid (centro de España)
         self.default_zoom = 6
+        self.map_cache = {}
+        self.data_cache = {}
+        self.max_cache_size = 50  # Máximo 50 mapas en caché
     
     def render_map(self, data: pd.DataFrame, metric: str = 'avg_temp', 
                    map_type: str = 'temperature', height: int = 600) -> folium.Map:
-        """Renderizar mapa con métricas y funcionalidades avanzadas - optimizado para lazy loading"""
+        """Renderizar mapa con métricas y funcionalidades avanzadas - optimizado con caché inteligente"""
         
-        # Crear clave única para el caché del mapa (más específica)
-        cache_key = f"map_{map_type}_{metric}_{len(data)}_{hash(str(data.columns.tolist()))}"
+        # Crear clave única para el caché del mapa
+        cache_key = self._create_cache_key(data, metric, map_type)
         
-        # Verificar si el mapa ya está en session_state
-        if cache_key in st.session_state:
-            # Verificar si los datos han cambiado (más eficiente)
-            current_data_hash = str(hash(str(data.values.tobytes()) + str(data.index.tolist())))
-            if st.session_state[cache_key]['data_hash'] == current_data_hash:
-                # Usar mapa desde caché
-                return st.session_state[cache_key]['map']
+        # Verificar si el mapa ya está en caché y es válido
+        if self._is_cached_map_valid(cache_key, data):
+            return self.map_cache[cache_key]['map']
         
-        # Crear hash de los datos para el caché
-        try:
-            data_hash = str(hash(str(data.values.tobytes()) + str(data.index.tolist())))
-        except (AttributeError, TypeError):
-            # Fallback para índices que no soportan tobytes()
-            data_hash = str(hash(str(data.values.tobytes()) + str(data.index.values.tolist())))
-        
-        # Crear mapa base (usar caché si es posible)
+        # Crear nuevo mapa
         m = self._create_base_map(map_type)
         
         if data.empty:
@@ -61,13 +59,8 @@ class AdvancedMapComponent:
         # Añadir controles adicionales solo si es necesario
         self._add_map_controls(m)
         
-        # Guardar mapa en session_state para evitar recreaciones
-        st.session_state[cache_key] = {
-            'map': m,
-            'data_hash': data_hash,
-            'timestamp': st.session_state.get('_last_map_update', 0)
-        }
-        st.session_state['_last_map_update'] = st.session_state.get('_last_map_update', 0) + 1
+        # Guardar en caché inteligente
+        self._cache_map(cache_key, m, data)
         
         return m
     
@@ -378,26 +371,35 @@ class AdvancedMapComponent:
         # Añadir control de capas
         folium.LayerControl().add_to(m)
         
-        # Añadir control de pantalla completa
-        folium.plugins.Fullscreen(
-            position='topright',
-            title='Expandir mapa',
-            title_cancel='Salir pantalla completa',
-            force_separate_button=True
-        ).add_to(m)
-        
-        # Añadir control de minimap
-        folium.plugins.MiniMap(
-            tile_layer='CartoDB positron',
-            position='bottomright',
-            width=150,
-            height=150,
-            collapsed_width=25,
-            collapsed_height=25
-        ).add_to(m)
+        # Añadir controles de plugins solo si están disponibles
+        if plugins is not None:
+            try:
+                # Añadir control de pantalla completa
+                plugins.Fullscreen(
+                    position='topright',
+                    title='Expandir mapa',
+                    title_cancel='Salir pantalla completa',
+                    force_separate_button=True
+                ).add_to(m)
+                
+                # Añadir control de minimap
+                plugins.MiniMap(
+                    tile_layer='CartoDB positron',
+                    position='bottomright',
+                    width=150,
+                    height=150,
+                    collapsed_width=25,
+                    collapsed_height=25
+                ).add_to(m)
+            except Exception as e:
+                # Si hay algún error con los plugins, continuar sin ellos
+                st.warning(f"Algunos controles del mapa no están disponibles: {str(e)}")
+        else:
+            # Si plugins no está disponible, usar controles básicos
+            st.info("Controles avanzados del mapa no disponibles. Usando controles básicos.")
     
     def render_map_selector(self, context: str = "main") -> str:
-        """Renderizar selector de tipo de mapa con lazy loading"""
+        """Renderizar selector de tipo de mapa con lazy loading - optimizado para evitar recargas"""
         map_types = {
             'temperature': '🌡️ Temperatura',
             'precipitation': '🌧️ Precipitación',
@@ -410,19 +412,43 @@ class AdvancedMapComponent:
         if map_key not in st.session_state:
             st.session_state[map_key] = 'temperature'
         
+        # Obtener índice actual sin modificar session_state
+        current_index = list(map_types.keys()).index(st.session_state[map_key])
+        
         selected_map = st.selectbox(
             "🗺️ Tipo de Mapa",
             options=list(map_types.keys()),
             format_func=lambda x: map_types[x],
             help="Selecciona el tipo de visualización del mapa",
             key=f"map_type_selector_{context}",
-            index=list(map_types.keys()).index(st.session_state[map_key])
+            index=current_index
         )
         
-        # Actualizar session state
-        st.session_state[map_key] = selected_map
+        # Actualizar session state solo si cambió
+        if selected_map != st.session_state[map_key]:
+            st.session_state[map_key] = selected_map
+            # Limpiar caché específico del mapa anterior
+            self._clear_map_cache_for_type(context, selected_map)
         
         return selected_map
+    
+    def _clear_map_cache_for_type(self, context: str, map_type: str):
+        """Limpiar caché específico para un tipo de mapa"""
+        # Limpiar caché de datos del mapa en session_state
+        keys_to_remove = [k for k in st.session_state.keys() 
+                         if k.startswith(f"map_data_{map_type}") or 
+                            k.startswith(f"cached_map_{context}_{map_type}") or
+                            k.startswith(f"rendered_map_{context}_{map_type}")]
+        
+        for key in keys_to_remove:
+            if key in st.session_state:
+                del st.session_state[key]
+        
+        # Limpiar caché interno del componente
+        keys_to_remove = [k for k in self.map_cache.keys() if map_type in k]
+        for key in keys_to_remove:
+            if key in self.map_cache:
+                del self.map_cache[key]
     
     def render_metric_selector(self, map_type: str, context: str = "main") -> str:
         """Renderizar selector de métrica según el tipo de mapa"""
@@ -451,7 +477,7 @@ class AdvancedMapComponent:
         return selected_metric
     
     def render_map_with_lazy_loading(self, data: pd.DataFrame, metric: str, map_type: str, context: str = "main") -> None:
-        """Renderizar mapa con lazy loading real - solo procesa datos del mapa seleccionado"""
+        """Renderizar mapa con lazy loading real - optimizado para evitar recargas al interactuar"""
         map_key = f"selected_map_{context}"
         current_map = st.session_state.get(map_key, 'temperature')
         
@@ -463,11 +489,12 @@ class AdvancedMapComponent:
                 
                 if not processed_data.empty:
                     map_obj = self.render_map(processed_data, metric, map_type)
-                    from streamlit_folium import st_folium
                     
-                    # Usar key única para cada contexto y tipo de mapa
-                    map_component_key = f"map_{context}_{map_type}"
-                    st_folium(map_obj, height=600, width=1000, key=map_component_key)
+                    # Usar st_folium con configuración optimizada para evitar recargas
+                    from streamlit_folium import st_folium
+                    # Key estable que no cambia con interacciones
+                    map_component_key = f"map_{context}_{map_type}_{metric}_static"
+                    st_folium(map_obj, height=600, width=1000, key=map_component_key, returned_objects=[])
                 else:
                     st.warning(f"No hay datos procesados disponibles para el mapa de {map_type}")
             else:
@@ -483,25 +510,112 @@ class AdvancedMapComponent:
         
         # Filtrar columnas según el tipo de mapa para optimizar rendimiento
         if map_type == 'temperature':
-            # Solo columnas relacionadas con temperatura
-            temp_columns = [col for col in data.columns if any(x in col.lower() for x in ['temp', 'city', 'year', 'month'])]
+            # Solo columnas relacionadas con temperatura + coordenadas
+            temp_columns = [col for col in data.columns if any(x in col.lower() for x in ['temp', 'city', 'year', 'month', 'lat', 'lon'])]
             return data[temp_columns] if temp_columns else data
         
         elif map_type == 'precipitation':
-            # Solo columnas relacionadas con precipitación
-            precip_columns = [col for col in data.columns if any(x in col.lower() for x in ['precip', 'rain', 'city', 'year', 'month'])]
+            # Solo columnas relacionadas con precipitación + coordenadas
+            precip_columns = [col for col in data.columns if any(x in col.lower() for x in ['precip', 'rain', 'city', 'year', 'month', 'lat', 'lon'])]
             return data[precip_columns] if precip_columns else data
         
         elif map_type == 'alerts':
-            # Solo columnas relacionadas con alertas
-            alert_columns = [col for col in data.columns if any(x in col.lower() for x in ['alert', 'severity', 'city', 'date'])]
+            # Solo columnas relacionadas con alertas + coordenadas
+            alert_columns = [col for col in data.columns if any(x in col.lower() for x in ['alert', 'severity', 'city', 'date', 'lat', 'lon'])]
             return data[alert_columns] if alert_columns else data
         
         elif map_type == 'comparison':
-            # Solo columnas relacionadas con comparación climática
-            comparison_columns = [col for col in data.columns if any(x in col.lower() for x in ['climate', 'classification', 'city', 'temp', 'precip'])]
+            # Solo columnas relacionadas con comparación climática + coordenadas
+            comparison_columns = [col for col in data.columns if any(x in col.lower() for x in ['climate', 'classification', 'city', 'temp', 'precip', 'lat', 'lon'])]
             return data[comparison_columns] if comparison_columns else data
         
         else:
             # Para otros tipos, devolver datos completos
             return data
+    
+    def _create_cache_key(self, data: pd.DataFrame, metric: str, map_type: str) -> str:
+        """Crear clave única para el caché del mapa"""
+        # Crear hash de los datos relevantes
+        data_hash = self._create_data_hash(data, map_type)
+        
+        # Crear clave compuesta
+        key_parts = [map_type, metric, data_hash]
+        return "_".join(key_parts)
+    
+    def _create_data_hash(self, data: pd.DataFrame, map_type: str) -> str:
+        """Crear hash de los datos relevantes para el tipo de mapa"""
+        if data.empty:
+            return "empty"
+        
+        # Filtrar solo las columnas relevantes para el tipo de mapa
+        relevant_columns = self._get_relevant_columns(map_type, data)
+        filtered_data = data[relevant_columns] if relevant_columns else data
+        
+        # Crear hash de los datos filtrados
+        try:
+            data_str = str(filtered_data.values.tobytes()) + str(filtered_data.index.tolist())
+            return str(hash(data_str))[:8]
+        except (AttributeError, TypeError):
+            # Fallback para índices que no soportan tobytes()
+            data_str = str(filtered_data.values.tobytes()) + str(filtered_data.index.values.tolist())
+            return str(hash(data_str))[:8]
+    
+    def _get_relevant_columns(self, map_type: str, data: pd.DataFrame = None) -> List[str]:
+        """Obtener columnas relevantes según el tipo de mapa, solo las que existen en los datos"""
+        if map_type == 'temperature':
+            required_cols = ['city', 'lat', 'lon', 'avg_temp', 'max_temp', 'min_temp']
+        elif map_type == 'precipitation':
+            required_cols = ['city', 'lat', 'lon', 'total_precip']
+        elif map_type == 'alerts':
+            required_cols = ['city', 'temperature_alert', 'precipitation_alert', 'humidity_alert', 'overall_alert', 'alert_severity']
+        elif map_type == 'comparison':
+            required_cols = ['city', 'lat', 'lon', 'avg_temp_city', 'total_precip_city', 'climate_classification', 'climate_comfort_score']
+        else:
+            required_cols = ['city']
+        
+        # Si se proporcionan datos, filtrar solo las columnas que existen
+        if data is not None and not data.empty:
+            available_cols = list(data.columns)
+            existing_cols = [col for col in required_cols if col in available_cols]
+            # Asegurar que siempre tengamos al menos 'city'
+            if 'city' not in existing_cols and 'city' in available_cols:
+                existing_cols = ['city'] + [col for col in existing_cols if col != 'city']
+            return existing_cols
+        
+        # Si no hay datos, devolver las columnas requeridas (comportamiento original)
+        return required_cols
+    
+    
+    def _is_cached_map_valid(self, cache_key: str, data: pd.DataFrame) -> bool:
+        """Verificar si el mapa en caché es válido"""
+        if cache_key not in self.map_cache:
+            return False
+        
+        cached_data = self.map_cache[cache_key]['data']
+        current_data_hash = self._create_data_hash(data, self.map_cache[cache_key]['map_type'])
+        
+        return cached_data == current_data_hash
+    
+    def _cache_map(self, cache_key: str, map_obj: folium.Map, data: pd.DataFrame):
+        """Guardar mapa en caché con límite de tamaño"""
+        # Limpiar caché si está lleno
+        if len(self.map_cache) >= self.max_cache_size:
+            # Eliminar el 20% más antiguo
+            keys_to_remove = list(self.map_cache.keys())[:self.max_cache_size // 5]
+            for key in keys_to_remove:
+                del self.map_cache[key]
+        
+        # Guardar nuevo mapa
+        self.map_cache[cache_key] = {
+            'map': map_obj,
+            'data': self._create_data_hash(data, cache_key.split('_')[0]),
+            'map_type': cache_key.split('_')[0],
+            'timestamp': st.session_state.get('_map_timestamp', 0)
+        }
+        st.session_state['_map_timestamp'] = st.session_state.get('_map_timestamp', 0) + 1
+    
+    def clear_cache(self):
+        """Limpiar caché de mapas"""
+        self.map_cache.clear()
+        self.data_cache.clear()
+    

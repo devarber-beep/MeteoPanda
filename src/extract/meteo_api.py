@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from pathlib import Path
 from typing import List, Dict, Optional
 from .dto import DailyWeatherDTO, CityConfigDTO
+from ..utils.logging_config import get_logger, log_api_request, log_performance_warning, log_validation_warning
 import yaml
 import time
 import random
@@ -17,6 +18,9 @@ load_dotenv()
 API_KEY = "b5e36938d0msh2b370cd85bb5d48p15ee49jsn8987e37d36ff"
 METEOSTAT_BASE_URL = "https://meteostat.p.rapidapi.com"
 HEADERS = {"x-rapidapi-key": API_KEY, "x-rapidapi-host": "meteostat.p.rapidapi.com"}
+
+# Configurar logger
+logger = get_logger("meteostat_api")
 
 # Rate Limiter para Meteostat (más conservador que AEMET)
 class MeteostatRateLimiter:
@@ -138,6 +142,9 @@ def make_meteostat_request(url: str, description: str = "petición Meteostat") -
     """
     try:
         response = requests.get(url, headers=HEADERS, timeout=(5, 30))
+        
+        # Log de la petición API
+        log_api_request(logger, "Meteostat", url, response.status_code, description=description)
         
         if response.status_code >= 400:
             response.raise_for_status()

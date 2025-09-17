@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from .dto import CityConfigDTO
 from .meteo_api import fetch_daily_data as fetch_meteostat_data, get_station_id as get_meteostat_station_id
 from .aemet_api import fetch_daily_data as fetch_aemet_data, get_station_id as get_aemet_station_id
+from ..utils.logging_config import get_logger, log_operation_start, log_operation_success, log_operation_error, log_data_loaded, log_api_request, log_validation_warning
 
 # Rutas base
 CONFIG_PATH = Path("config/config.yaml")
@@ -19,6 +20,9 @@ SQL_PATH = Path("src/transform/sql")
 
 # Cargar variables de entorno
 load_dotenv()
+
+# Configurar logger
+logger = get_logger("extract")
 
 # Configurar pipeline dlt
 pipeline = dlt.pipeline(
@@ -46,14 +50,23 @@ def extract_meteostat_data(city: CityConfigDTO, start_date: str, end_date: str, 
     try:
         station_id = get_meteostat_station_id(city.latitude, city.longitude)
         if station_id:
+            logger.info(f"Extrayendo datos Meteostat para {city.name} (estación: {station_id})")
             df = fetch_meteostat_data(station_id, start_date, end_date)
             df["source"] = "meteostat"
             df["city"] = city.name
             df["region"] = region
             df["station"] = station_id
+            
+            if not df.empty:
+                log_data_loaded(logger, "Meteostat", len(df), city=city.name, station=station_id, date_range=f"{start_date} to {end_date}")
+            else:
+                log_validation_warning(logger, "Meteostat", f"No se obtuvieron datos para {city.name}", city=city.name, station=station_id)
+            
             return df
+        else:
+            log_validation_warning(logger, "Meteostat", f"No se encontró estación para {city.name}", city=city.name, coordinates=f"{city.latitude}, {city.longitude}")
     except Exception as e:
-        print(f"Error extrayendo datos de Meteostat para {city.name}: {e}")
+        log_operation_error(logger, f"extracción Meteostat para {city.name}", e, city=city.name, source="meteostat")
     return pd.DataFrame()
 
 def extract_aemet_data(city: CityConfigDTO, start_date: str, end_date: str, region: str) -> pd.DataFrame:
@@ -63,14 +76,23 @@ def extract_aemet_data(city: CityConfigDTO, start_date: str, end_date: str, regi
     try:
         station_id = get_aemet_station_id(city.latitude, city.longitude)
         if station_id:
+            logger.info(f"Extrayendo datos AEMET para {city.name} (estación: {station_id})")
             df = fetch_aemet_data(station_id, start_date, end_date)
             df["source"] = "aemet"
             df["city"] = city.name
             df["region"] = region
             df["station"] = station_id
+            
+            if not df.empty:
+                log_data_loaded(logger, "AEMET", len(df), city=city.name, station=station_id, date_range=f"{start_date} to {end_date}")
+            else:
+                log_validation_warning(logger, "AEMET", f"No se obtuvieron datos para {city.name}", city=city.name, station=station_id)
+            
             return df
+        else:
+            log_validation_warning(logger, "AEMET", f"No se encontró estación para {city.name}", city=city.name, coordinates=f"{city.latitude}, {city.longitude}")
     except Exception as e:
-        print(f"Error extrayendo datos de AEMET para {city.name}: {e}")
+        log_operation_error(logger, f"extracción AEMET para {city.name}", e, city=city.name, source="aemet")
     return pd.DataFrame()
 
 
@@ -92,12 +114,12 @@ def create_weather_raw_schema():
         """).fetchall()
         
         if not schemas:
-            print("No se encontraron esquemas DLT con datos")
+            logger.warning("No se encontraron esquemas DLT con datos")
             con.close()
             return
         
         latest_schema = schemas[0][0]
-        print(f"Copiando datos desde {latest_schema} a weather_raw")
+        logger.info(f"Copiando datos desde {latest_schema} a weather_raw")
         
         # Crear esquema weather_raw si no existe
         con.execute("CREATE SCHEMA IF NOT EXISTS weather_raw")
@@ -145,7 +167,7 @@ def create_weather_raw_schema():
             
             # Verificar que se copiaron los datos
             count = con.execute("SELECT COUNT(*) FROM weather_raw.weather_data").fetchone()[0]
-            print(f"✅ Datos copiados exitosamente: {count} registros en weather_raw.weather_data")
+            log_data_loaded(logger, "weather_raw.weather_data", count, schema=latest_schema)
             
             # Verificar coordenadas
             coords_count = con.execute("""
@@ -153,14 +175,17 @@ def create_weather_raw_schema():
                 FROM weather_raw.weather_data 
                 WHERE lat IS NOT NULL AND lon IS NOT NULL
             """).fetchone()[0]
+            
+            if coords_count < count:
+                log_validation_warning(logger, "coordenadas", f"Solo {coords_count}/{count} registros tienen coordenadas", total_records=count, records_with_coords=coords_count)
                         
         else:
-            print(f"❌ No se encontró la tabla weather_data en {latest_schema}")
+            logger.error(f"No se encontró la tabla weather_data en {latest_schema}")
         
         con.close()
         
     except Exception as e:
-        print(f"Error creando esquema weather_raw: {e}")
+        log_operation_error(logger, "creación de esquema weather_raw", e)
         if 'con' in locals():
             con.close()
 
@@ -168,28 +193,37 @@ def extract_and_load(config_path: str):
     """
     Función principal que extrae datos de todas las fuentes y los carga en dlt.
     """
+    log_operation_start(logger, "extracción y carga de datos", config_path=config_path)
+    
     # Cargar configuración
     cities, start_date, end_date, _ = load_city_config(config_path)
+    logger.info(f"Configuración cargada: {len(cities)} ciudades, período {start_date} a {end_date}")
     
     all_data = []
+    successful_extractions = 0
+    failed_extractions = 0
     
     for city in cities:
-        print(f"\nProcesando ciudad: {city.name}")
+        logger.info(f"Procesando ciudad: {city.name}")
         
         # Usar la región específica de cada ciudad
         city_region = city.region
         
         # Extraer datos de Meteostat
-        print(f"Extrayendo datos de Meteostat {city.name}")
         meteostat_df = extract_meteostat_data(city, start_date, end_date, city_region)
         if not meteostat_df.empty:
             all_data.append(meteostat_df)
+            successful_extractions += 1
+        else:
+            failed_extractions += 1
         
         # Extraer datos de AEMET
-        print(f"Extrayendo datos de AEMET {city.name}")
         aemet_df = extract_aemet_data(city, start_date, end_date, city_region)
         if not aemet_df.empty:
             all_data.append(aemet_df)
+            successful_extractions += 1
+        else:
+            failed_extractions += 1
         
     
     if all_data:
@@ -248,9 +282,18 @@ def extract_and_load(config_path: str):
             write_disposition="merge",
             primary_key=["date", "city", "source"]
         )
-        print(f"\nDatos cargados exitosamente: {load_info}")
+        logger.info(f"Datos cargados exitosamente: {load_info}")
         
         # Crear esquema weather_raw y copiar datos
         create_weather_raw_schema()
+        
+        # Log resumen final
+        log_operation_success(logger, "extracción y carga de datos", 
+                            successful_extractions=successful_extractions,
+                            failed_extractions=failed_extractions,
+                            total_records=len(combined_df),
+                            cities_processed=len(cities))
     else:
-        print("No se encontraron datos para cargar")
+        logger.warning("No se encontraron datos para cargar", 
+                      successful_extractions=successful_extractions,
+                      failed_extractions=failed_extractions)
