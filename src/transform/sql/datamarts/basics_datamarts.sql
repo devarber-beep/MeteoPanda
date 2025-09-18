@@ -6,7 +6,7 @@ SELECT
     region,
     station,
     year,
-    strftime('%m', date) AS month,
+    CAST(strftime('%m', date) AS INT) AS month,
     COUNT(*) AS days,
     ROUND(AVG(temp_avg_c), 2) AS avg_temp,
     ROUND(MAX(temp_max_c), 2) AS max_temp,
@@ -17,5 +17,4 @@ SELECT
     ROUND(AVG(lat), 6) AS lat,
     ROUND(AVG(lon), 6) AS lon
 FROM silver.weather_cleaned
-WHERE lat IS NOT NULL AND lon IS NOT NULL
 GROUP BY city, region, station, year, month;

@@ -370,3 +370,28 @@
 2025-09-18 00:50:54,177 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
 2025-09-18 00:50:59,217 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
 2025-09-18 00:51:04,564 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 01:54:29,014 | INFO     | dashboard            | [CONFIG] Configuración ciudades cargada | Context: {"cities_count": 16}
+2025-09-18 01:54:29,015 | INFO     | dashboard            | [START] Iniciando inicialización del dashboard
+2025-09-18 01:54:29,033 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-18 01:54:29,039 | INFO     | data_manager         | [DB] consulta: query (10 filas) | Context: {"query_preview": "\n            SELECT DISTINCT city, lat, lon \n     "}
+2025-09-18 01:54:29,043 | INFO     | data_manager         | [DB] consulta: query (583 filas) | Context: {"query_preview": "SELECT * FROM gold.city_yearly_summary"}
+2025-09-18 01:54:29,050 | INFO     | dashboard            | [SUCCESS] inicialización del dashboard completado exitosamente | Context: {"loaded_data_types": ["summary", "coords"], "has_map_component": true, "has_filter_manager": true}
+2025-09-18 01:54:42,872 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 01:54:59,655 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 01:55:06,034 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 01:55:08,786 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 01:55:15,300 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 11:15:45,882 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 11:33:37,086 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 11:33:37,097 | WARNING  | dashboard            | [WARNING] No hay datos para mostrar en el mapa. | Context: {"map_type": "temperature", "filtered_records": 0}
+2025-09-18 11:33:44,302 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 11:33:44,312 | WARNING  | dashboard            | [WARNING] No hay datos para mostrar en el mapa. | Context: {"map_type": "temperature", "filtered_records": 0}
+2025-09-18 12:34:58,473 | INFO     | dashboard            | [CONFIG] Configuración ciudades cargada | Context: {"cities_count": 16}
+2025-09-18 12:34:58,474 | INFO     | dashboard            | [START] Iniciando inicialización del dashboard
+2025-09-18 12:34:58,490 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-18 12:34:58,497 | INFO     | data_manager         | [DB] consulta: query (16 filas) | Context: {"query_preview": "\n            SELECT DISTINCT city, lat, lon \n     "}
+2025-09-18 12:34:58,503 | INFO     | data_manager         | [DB] consulta: query (1472 filas) | Context: {"query_preview": "SELECT * FROM gold.city_yearly_summary"}
+2025-09-18 12:34:58,508 | INFO     | dashboard            | [SUCCESS] inicialización del dashboard completado exitosamente | Context: {"loaded_data_types": ["summary", "coords"], "has_map_component": true, "has_filter_manager": true}
+2025-09-18 12:35:41,089 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:35:52,524 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:36:11,816 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state

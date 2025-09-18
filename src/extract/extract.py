@@ -155,15 +155,30 @@ def create_weather_raw_schema():
             lat_case_sql = "CASE " + " ".join(lat_cases) + " ELSE NULL END"
             lon_case_sql = "CASE " + " ".join(lon_cases) + " ELSE NULL END"
                         
-            # Copiar datos al esquema weather_raw con coordenadas del config
-            con.execute(f"""
+            # Construir lista de columnas de la tabla origen excluyendo lat/lon para evitar colisiones
+            cols_df = con.execute(f"""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_schema = '{latest_schema}'
+                  AND table_name = 'weather_data'
+                ORDER BY ordinal_position
+            """).fetchdf()
+
+            source_columns = [row[0] for _, row in cols_df.iterrows()] if not cols_df.empty else []
+            non_coord_columns = [c for c in source_columns if c.lower() not in ('lat', 'lon')]
+            select_non_coords = ",\n                    ".join(non_coord_columns) if non_coord_columns else "*"
+
+            # Asignar coordenadas directamente desde config.yaml (las APIs diarias no las traen)
+            select_sql = f"""
                 CREATE TABLE IF NOT EXISTS weather_raw.weather_data AS 
                 SELECT 
-                    *,
+                    {select_non_coords},
                     {lat_case_sql} AS lat,
                     {lon_case_sql} AS lon
                 FROM {latest_schema}.weather_data
-            """)
+            """
+
+            con.execute(select_sql)
             
             # Verificar que se copiaron los datos
             count = con.execute("SELECT COUNT(*) FROM weather_raw.weather_data").fetchone()[0]
