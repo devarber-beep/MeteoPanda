@@ -1,6 +1,6 @@
 import argparse
-import logging
 import os
+import time
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -10,8 +10,13 @@ load_dotenv()
 # Configurar PYTHONPATH si no está configurado
 if 'PYTHONPATH' not in os.environ:
     os.environ['PYTHONPATH'] = '.'
-    print("PYTHONPATH configurado manualmente")
 
+# Configurar logging antes de importar otros módulos
+from src.utils.logging_config import setup_logging, get_logger, log_operation_start, log_operation_success, log_operation_error
+
+# Configurar logging
+setup_logging(level="INFO", log_file="logs/meteopanda.log", console_output=True, structured=True)
+logger = get_logger("meteo_cli")
 
 from src.extract.extract import extract_and_load
 from src.transform.transform import run_sql_transformations
@@ -21,37 +26,44 @@ CONFIG_PATH = Path("config/config.yaml")
 BRONZE_PATH = Path("data/raw")
 SQL_PATH = Path("src/transform/sql")
 
-# Configurar logger
-logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
-logger = logging.getLogger("meteo_cli")
-
 def run_download():
+    start_time = time.time()
+    log_operation_start(logger, "extracción de datos meteorológicos", config_path=str(CONFIG_PATH))
+    
     try:
-        logger.info("Iniciando extracción de datos meteorológicos...")
         extract_and_load(CONFIG_PATH)
-        logger.info("Extracción completada correctamente.")
+        duration = time.time() - start_time
+        log_operation_success(logger, "extracción de datos meteorológicos", duration=duration)
     except Exception as e:
-        logger.exception(f"Error durante la extracción: {e}")
+        log_operation_error(logger, "extracción de datos meteorológicos", e)
 
 def run_pipeline_silver():
+    start_time = time.time()
+    log_operation_start(logger, "pipeline ELT Silver", sql_path=str(SQL_PATH))
+    
     try:
-        logger.info("Iniciando pipeline ELT MeteoPanda → Silver...")
         run_sql_transformations(SQL_PATH)
-        logger.info("✅ Pipeline Silver completo.")
+        duration = time.time() - start_time
+        log_operation_success(logger, "pipeline ELT Silver", duration=duration)
     except Exception as e:
-        logger.exception(f"❌ Error en el pipeline Silver: {e}")
+        log_operation_error(logger, "pipeline ELT Silver", e)
 
 def run_pipeline_gold():
+    start_time = time.time()
+    log_operation_start(logger, "pipeline ELT Gold", sql_path=str(SQL_PATH / "datamarts"))
+    
     try:
-        logger.info("Iniciando pipeline ELT MeteoPanda → Gold...")
         run_sql_transformations(SQL_PATH / "datamarts")
-        logger.info("✅ Pipeline Gold completo.")
+        duration = time.time() - start_time
+        log_operation_success(logger, "pipeline ELT Gold", duration=duration)
     except Exception as e:
-        logger.exception(f"❌ Error en el pipeline Gold: {e}")
+        log_operation_error(logger, "pipeline ELT Gold", e)
 
 def clean_database():
+    start_time = time.time()
+    log_operation_start(logger, "limpieza de base de datos")
+    
     try:
-        logger.info("Limpiando base de datos...")
         from src.utils.db import get_connection
         
         conn = get_connection()
@@ -64,6 +76,7 @@ def clean_database():
         """
         
         schemas = conn.execute(schemas_query).fetchall()
+        logger.info(f"Encontrados {len(schemas)} esquemas para eliminar")
         
         for schema in schemas:
             schema_name = schema[0]
@@ -71,15 +84,17 @@ def clean_database():
             conn.execute(f"DROP SCHEMA IF EXISTS {schema_name} CASCADE")
         
         conn.close()
-        logger.info("✅ Base de datos limpiada correctamente.")
+        duration = time.time() - start_time
+        log_operation_success(logger, "limpieza de base de datos", duration=duration, schemas_removed=len(schemas))
         
     except Exception as e:
-        logger.exception(f"❌ Error limpiando la base de datos: {e}")
+        log_operation_error(logger, "limpieza de base de datos", e)
 
 def run_download_and_pipelines():
+    start_time = time.time()
+    log_operation_start(logger, "descarga y pipelines completos")
+    
     try:
-        logger.info("Ejecutando descarga y pipelines...")
-        
         # Descarga
         run_download()
         
@@ -89,15 +104,17 @@ def run_download_and_pipelines():
         # Pipeline Gold
         run_pipeline_gold()
         
-        logger.info("✅ Descarga y pipelines completados correctamente.")
+        duration = time.time() - start_time
+        log_operation_success(logger, "descarga y pipelines completos", duration=duration)
         
     except Exception as e:
-        logger.exception(f"❌ Error en descarga y pipelines: {e}")
+        log_operation_error(logger, "descarga y pipelines completos", e)
 
 def run_full_pipeline():
+    start_time = time.time()
+    log_operation_start(logger, "pipeline completo (limpieza + descarga + pipelines)")
+    
     try:
-        logger.info("Ejecutando pipeline completo (limpieza + descarga + pipelines)...")
-        
         # Limpieza
         clean_database()
         
@@ -110,10 +127,11 @@ def run_full_pipeline():
         # Pipeline Gold
         run_pipeline_gold()
         
-        logger.info("✅ Pipeline completo ejecutado correctamente.")
+        duration = time.time() - start_time
+        log_operation_success(logger, "pipeline completo", duration=duration)
         
     except Exception as e:
-        logger.exception(f"❌ Error en pipeline completo: {e}")
+        log_operation_error(logger, "pipeline completo", e)
 
 def main():
     parser = argparse.ArgumentParser(description="MeteoPanda CLI")
