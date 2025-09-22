@@ -277,7 +277,7 @@ def log_rate_limiter_status():
     Útil para debugging y monitoreo.
     """
     stats = get_rate_limiter_stats()
-    print(f"📊 Rate Limiter Status: {stats['current_requests']}/{stats['max_requests']} peticiones activas")
+    print(f"   Rate Limiter Status: {stats['current_requests']}/{stats['max_requests']} peticiones activas")
     print(f"   Slots disponibles: {stats['available_slots']}")
     print(f"   Ventana de tiempo: {stats['time_window']} segundos")
     

@@ -1037,3 +1037,25 @@ Load package 1758191559.4585712 is LOADED and contains no failed jobs
 2025-09-18 12:32:41,089 | INFO     | transform            | [SUCCESS] transformaciones SQL completado exitosamente | Context: {"successful_transformations": 9, "failed_transformations": 0, "total_files": 9}
 2025-09-18 12:32:41,242 | INFO     | meteo_cli            | [SUCCESS] pipeline ELT Gold completado exitosamente en 0.64s
 2025-09-18 12:32:41,242 | INFO     | meteo_cli            | [SUCCESS] pipeline completo completado exitosamente en 421.43s
+2025-09-20 11:50:00,463 | INFO     | meteo_cli            | [START] Iniciando pipeline ELT Silver | Context: {"sql_path": "src\\transform\\sql"}
+2025-09-20 11:50:00,464 | INFO     | transform            | [START] Iniciando transformaciones SQL | Context: {"sql_directory": "src\\transform\\sql"}
+2025-09-20 11:50:00,575 | INFO     | database             | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-20 11:50:00,576 | INFO     | transform            | Encontrados 1 archivos SQL para procesar
+2025-09-20 11:50:00,715 | INFO     | transform            | [DB] ejecutar: schema_silver | Context: {"sql_file": "src\\transform\\sql\\schema_silver.sql"}
+2025-09-20 11:50:00,716 | INFO     | transform            | [SUCCESS] transformaciones SQL completado exitosamente | Context: {"successful_transformations": 1, "failed_transformations": 0, "total_files": 1}
+2025-09-20 11:50:00,808 | INFO     | meteo_cli            | [SUCCESS] pipeline ELT Silver completado exitosamente en 0.34s
+2025-09-20 11:50:09,858 | INFO     | meteo_cli            | [START] Iniciando pipeline ELT Gold | Context: {"sql_path": "src\\transform\\sql\\datamarts"}
+2025-09-20 11:50:09,858 | INFO     | transform            | [START] Iniciando transformaciones SQL | Context: {"sql_directory": "src\\transform\\sql\\datamarts"}
+2025-09-20 11:50:09,905 | INFO     | database             | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-20 11:50:09,906 | INFO     | transform            | Encontrados 9 archivos SQL para procesar
+2025-09-20 11:50:09,960 | INFO     | transform            | [DB] ejecutar: basics_datamarts | Context: {"sql_file": "src\\transform\\sql\\datamarts\\basics_datamarts.sql"}
+2025-09-20 11:50:10,052 | INFO     | transform            | [DB] ejecutar: climate_comparison | Context: {"sql_file": "src\\transform\\sql\\datamarts\\climate_comparison.sql"}
+2025-09-20 11:50:10,078 | INFO     | transform            | [DB] ejecutar: climate_profiles | Context: {"sql_file": "src\\transform\\sql\\datamarts\\climate_profiles.sql"}
+2025-09-20 11:50:10,115 | INFO     | transform            | [DB] ejecutar: montlhy_stats | Context: {"sql_file": "src\\transform\\sql\\datamarts\\montlhy_stats.sql"}
+2025-09-20 11:50:10,183 | INFO     | transform            | [DB] ejecutar: seasonal_analysis | Context: {"sql_file": "src\\transform\\sql\\datamarts\\seasonal_analysis.sql"}
+2025-09-20 11:50:10,312 | INFO     | transform            | [DB] ejecutar: snapshots | Context: {"sql_file": "src\\transform\\sql\\datamarts\\snapshots.sql"}
+2025-09-20 11:50:10,395 | INFO     | transform            | [DB] ejecutar: weather_alerts | Context: {"sql_file": "src\\transform\\sql\\datamarts\\weather_alerts.sql"}
+2025-09-20 11:50:10,439 | INFO     | transform            | [DB] ejecutar: weather_insights | Context: {"sql_file": "src\\transform\\sql\\datamarts\\weather_insights.sql"}
+2025-09-20 11:50:10,466 | INFO     | transform            | [DB] ejecutar: weather_trends | Context: {"sql_file": "src\\transform\\sql\\datamarts\\weather_trends.sql"}
+2025-09-20 11:50:10,467 | INFO     | transform            | [SUCCESS] transformaciones SQL completado exitosamente | Context: {"successful_transformations": 9, "failed_transformations": 0, "total_files": 9}
+2025-09-20 11:50:10,650 | INFO     | meteo_cli            | [SUCCESS] pipeline ELT Gold completado exitosamente en 0.79s

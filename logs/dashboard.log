@@ -395,3 +395,292 @@
 2025-09-18 12:35:41,089 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
 2025-09-18 12:35:52,524 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
 2025-09-18 12:36:11,816 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:53:04,781 | INFO     | dashboard            | [CONFIG] Configuración ciudades cargada | Context: {"cities_count": 16}
+2025-09-18 12:53:04,782 | INFO     | dashboard            | [START] Iniciando inicialización del dashboard
+2025-09-18 12:53:04,799 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-18 12:53:04,804 | INFO     | data_manager         | [DB] consulta: query (16 filas) | Context: {"query_preview": "\n            SELECT DISTINCT city, lat, lon \n     "}
+2025-09-18 12:53:04,809 | INFO     | data_manager         | [DB] consulta: query (1472 filas) | Context: {"query_preview": "SELECT * FROM gold.city_yearly_summary"}
+2025-09-18 12:53:04,816 | INFO     | dashboard            | [SUCCESS] inicialización del dashboard completado exitosamente | Context: {"loaded_data_types": ["summary", "coords"], "has_map_component": true, "has_filter_manager": true}
+2025-09-18 12:53:19,048 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:53:37,880 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:55:16,256 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:55:16,423 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:55:16,446 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-18 12:55:16,453 | INFO     | data_manager         | [DB] consulta_paginada: summary (50 filas) | Context: {"query_preview": "P\u00e1gina 1 de 28"}
+2025-09-18 12:55:32,294 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:55:32,481 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:55:32,502 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-18 12:55:32,506 | INFO     | data_manager         | [DB] consulta_paginada: summary (50 filas) | Context: {"query_preview": "P\u00e1gina 2 de 28"}
+2025-09-18 12:55:33,909 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:55:34,088 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:55:34,110 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-18 12:55:34,115 | INFO     | data_manager         | [DB] consulta_paginada: summary (50 filas) | Context: {"query_preview": "P\u00e1gina 3 de 28"}
+2025-09-18 12:55:35,396 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:55:35,552 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:55:35,573 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-18 12:55:35,580 | INFO     | data_manager         | [DB] consulta_paginada: summary (50 filas) | Context: {"query_preview": "P\u00e1gina 4 de 28"}
+2025-09-18 12:55:37,291 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:55:37,457 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:55:37,478 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-18 12:55:37,485 | INFO     | data_manager         | [DB] consulta_paginada: summary (50 filas) | Context: {"query_preview": "P\u00e1gina 5 de 28"}
+2025-09-18 12:55:38,296 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:55:38,461 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:55:38,483 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-18 12:55:38,489 | INFO     | data_manager         | [DB] consulta_paginada: summary (50 filas) | Context: {"query_preview": "P\u00e1gina 6 de 28"}
+2025-09-18 12:55:39,332 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:55:39,503 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:55:39,524 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-18 12:55:39,534 | INFO     | data_manager         | [DB] consulta_paginada: summary (50 filas) | Context: {"query_preview": "P\u00e1gina 7 de 28"}
+2025-09-18 12:55:40,351 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:55:40,516 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:55:40,537 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-18 12:55:40,544 | INFO     | data_manager         | [DB] consulta_paginada: summary (50 filas) | Context: {"query_preview": "P\u00e1gina 8 de 28"}
+2025-09-18 12:55:41,090 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:55:41,255 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:55:41,275 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-18 12:55:41,280 | INFO     | data_manager         | [DB] consulta_paginada: summary (50 filas) | Context: {"query_preview": "P\u00e1gina 9 de 28"}
+2025-09-18 12:55:41,840 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:55:42,013 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:55:42,036 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-18 12:55:42,042 | INFO     | data_manager         | [DB] consulta_paginada: summary (50 filas) | Context: {"query_preview": "P\u00e1gina 10 de 28"}
+2025-09-18 12:55:42,699 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:55:42,865 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:55:42,888 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-18 12:55:42,896 | INFO     | data_manager         | [DB] consulta_paginada: summary (50 filas) | Context: {"query_preview": "P\u00e1gina 11 de 28"}
+2025-09-18 12:55:43,871 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:55:44,029 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:55:44,051 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-18 12:55:44,056 | INFO     | data_manager         | [DB] consulta_paginada: summary (50 filas) | Context: {"query_preview": "P\u00e1gina 12 de 28"}
+2025-09-18 12:56:00,461 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:56:00,671 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:56:07,238 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:56:07,431 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:56:07,457 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-18 12:56:07,463 | INFO     | data_manager         | [DB] consulta_paginada: summary (37 filas) | Context: {"query_preview": "P\u00e1gina 28 de 28"}
+2025-09-18 12:56:22,919 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:56:22,944 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-18 12:56:22,948 | INFO     | data_manager         | [DB] consulta_paginada: summary (0 filas) | Context: {"query_preview": "P\u00e1gina 28 de 6"}
+2025-09-18 12:56:28,165 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:56:30,465 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:56:30,488 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-18 12:56:30,491 | INFO     | data_manager         | [DB] consulta_paginada: summary (0 filas) | Context: {"query_preview": "P\u00e1gina 28 de 3"}
+2025-09-18 12:56:45,686 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:56:55,569 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:57:00,354 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:57:08,353 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:57:08,367 | WARNING  | dashboard            | [WARNING] No hay datos para mostrar en el mapa. | Context: {"map_type": "temperature", "filtered_records": 0}
+2025-09-18 12:57:15,690 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:57:27,356 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:57:27,367 | WARNING  | dashboard            | [WARNING] No hay datos para mostrar en el mapa. | Context: {"map_type": "temperature", "filtered_records": 0}
+2025-09-18 12:57:31,134 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:57:41,587 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:57:58,922 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:58:06,570 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:58:11,749 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:58:20,248 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:58:26,641 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:58:31,481 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:58:37,473 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:58:43,965 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:58:47,121 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:58:49,261 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:58:58,453 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 12:59:57,344 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 13:00:07,980 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 13:00:19,422 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-18 13:06:27,350 | INFO     | dashboard            | [CONFIG] Configuración ciudades cargada | Context: {"cities_count": 16}
+2025-09-18 13:06:27,352 | INFO     | dashboard            | [START] Iniciando inicialización del dashboard
+2025-09-18 13:06:27,371 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-18 13:06:27,379 | INFO     | data_manager         | [DB] consulta: query (16 filas) | Context: {"query_preview": "\n            SELECT DISTINCT city, lat, lon \n     "}
+2025-09-18 13:06:27,386 | INFO     | data_manager         | [DB] consulta: query (1472 filas) | Context: {"query_preview": "SELECT * FROM gold.city_yearly_summary"}
+2025-09-18 13:06:27,394 | INFO     | dashboard            | [SUCCESS] inicialización del dashboard completado exitosamente | Context: {"loaded_data_types": ["coords", "summary"], "has_map_component": true, "has_filter_manager": true}
+2025-09-19 12:32:37,859 | INFO     | dashboard            | [CONFIG] Configuración ciudades cargada | Context: {"cities_count": 16}
+2025-09-19 12:32:37,860 | INFO     | dashboard            | [START] Iniciando inicialización del dashboard
+2025-09-19 12:32:37,946 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-19 12:32:37,977 | INFO     | data_manager         | [DB] consulta: query (16 filas) | Context: {"query_preview": "\n            SELECT DISTINCT city, lat, lon \n     "}
+2025-09-19 12:32:37,991 | INFO     | data_manager         | [DB] consulta: query (1472 filas) | Context: {"query_preview": "SELECT * FROM gold.city_yearly_summary"}
+2025-09-19 12:32:38,004 | INFO     | dashboard            | [SUCCESS] inicialización del dashboard completado exitosamente | Context: {"loaded_data_types": ["summary", "coords"], "has_map_component": true, "has_filter_manager": true}
+2025-09-19 12:33:03,022 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-19 12:33:03,033 | WARNING  | dashboard            | [WARNING] No hay datos para mostrar en el mapa. | Context: {"map_type": "temperature", "filtered_records": 0}
+2025-09-19 12:33:07,512 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-19 12:33:17,377 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-19 12:33:43,447 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-19 13:51:25,890 | INFO     | dashboard            | [CONFIG] Configuración ciudades cargada | Context: {"cities_count": 16}
+2025-09-19 13:51:25,891 | INFO     | dashboard            | [START] Iniciando inicialización del dashboard
+2025-09-19 13:51:25,920 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-19 13:51:25,925 | INFO     | data_manager         | [DB] consulta: query (16 filas) | Context: {"query_preview": "\n            SELECT DISTINCT city, lat, lon \n     "}
+2025-09-19 13:51:25,929 | INFO     | data_manager         | [DB] consulta: query (1472 filas) | Context: {"query_preview": "SELECT * FROM gold.city_yearly_summary"}
+2025-09-19 13:51:25,936 | INFO     | dashboard            | [SUCCESS] inicialización del dashboard completado exitosamente | Context: {"loaded_data_types": ["coords", "summary"], "has_map_component": true, "has_filter_manager": true}
+2025-09-20 11:51:43,414 | INFO     | dashboard            | [CONFIG] Configuración ciudades cargada | Context: {"cities_count": 16}
+2025-09-20 11:51:43,416 | INFO     | dashboard            | [START] Iniciando inicialización del dashboard
+2025-09-20 11:51:43,434 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-20 11:51:43,449 | INFO     | data_manager         | [DB] consulta: query (16 filas) | Context: {"query_preview": "\n            SELECT DISTINCT city, lat, lon \n     "}
+2025-09-20 11:51:43,457 | INFO     | data_manager         | [DB] consulta: query (1472 filas) | Context: {"query_preview": "SELECT * FROM gold.city_yearly_summary"}
+2025-09-20 11:51:43,466 | INFO     | dashboard            | [SUCCESS] inicialización del dashboard completado exitosamente | Context: {"loaded_data_types": ["coords", "summary"], "has_map_component": true, "has_filter_manager": true}
+2025-09-20 11:51:59,575 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-20 11:52:09,665 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-20 11:52:27,405 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-20 12:28:59,065 | INFO     | matplotlib.font_manager | generated new fontManager
+2025-09-20 12:31:29,074 | INFO     | dashboard            | [CONFIG] Configuración ciudades cargada | Context: {"cities_count": 16}
+2025-09-20 12:31:29,075 | INFO     | dashboard            | [START] Iniciando inicialización del dashboard
+2025-09-20 12:31:29,156 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-20 12:31:29,180 | INFO     | data_manager         | [DB] consulta: query (16 filas) | Context: {"query_preview": "\n            SELECT DISTINCT city, lat, lon \n     "}
+2025-09-20 12:31:29,190 | INFO     | data_manager         | [DB] consulta: query (1472 filas) | Context: {"query_preview": "SELECT * FROM gold.city_yearly_summary"}
+2025-09-20 12:31:29,198 | INFO     | dashboard            | [SUCCESS] inicialización del dashboard completado exitosamente | Context: {"loaded_data_types": ["coords", "summary"], "has_map_component": true, "has_filter_manager": true}
+2025-09-20 12:31:41,136 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-20 12:32:12,922 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-20 12:32:12,944 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-20 12:32:12,948 | INFO     | data_manager         | [DB] consulta: query (80 filas) | Context: {"query_preview": "SELECT * FROM gold.weather_trends"}
+2025-09-20 12:32:15,184 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-20 12:32:35,564 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-20 12:32:39,941 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-20 12:32:39,963 | INFO     | src.dashboard.predictive.predictive_manager | Iniciando predicción: temperature para todas las ciudades
+2025-09-20 12:32:39,969 | INFO     | src.dashboard.predictive.features.feature_engineering | Aplicando ingeniería de características para temp_avg_c
+2025-09-20 12:32:39,970 | ERROR    | src.dashboard.predictive.features.feature_engineering | engineer_features:104  | Error en ingeniería de características: 'date'
+2025-09-20 12:32:39,970 | ERROR    | src.dashboard.predictive.predictive_manager | predict        :161  | Error en predicción: 'date'
+2025-09-20 12:32:39,972 | ERROR    | dashboard            | error          :72   | Error en predicción: 'date'
+2025-09-20 12:32:49,689 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-20 12:32:49,709 | INFO     | src.dashboard.predictive.predictive_manager | Iniciando predicción: temperature para todas las ciudades
+2025-09-20 12:32:49,712 | INFO     | src.dashboard.predictive.features.feature_engineering | Aplicando ingeniería de características para temp_avg_c
+2025-09-20 12:32:49,713 | ERROR    | src.dashboard.predictive.features.feature_engineering | engineer_features:104  | Error en ingeniería de características: 'date'
+2025-09-20 12:32:49,714 | ERROR    | src.dashboard.predictive.predictive_manager | predict        :161  | Error en predicción: 'date'
+2025-09-20 12:32:49,716 | ERROR    | dashboard            | error          :72   | Error en predicción: 'date'
+2025-09-20 12:32:51,365 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-20 12:32:51,386 | INFO     | src.dashboard.predictive.predictive_manager | Iniciando predicción: temperature para todas las ciudades
+2025-09-20 12:32:51,389 | INFO     | src.dashboard.predictive.features.feature_engineering | Aplicando ingeniería de características para temp_avg_c
+2025-09-20 12:32:51,390 | ERROR    | src.dashboard.predictive.features.feature_engineering | engineer_features:104  | Error en ingeniería de características: 'date'
+2025-09-20 12:32:51,391 | ERROR    | src.dashboard.predictive.predictive_manager | predict        :161  | Error en predicción: 'date'
+2025-09-20 12:32:51,393 | ERROR    | dashboard            | error          :72   | Error en predicción: 'date'
+2025-09-20 12:32:58,547 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-20 12:32:58,567 | INFO     | src.dashboard.predictive.predictive_manager | Iniciando predicción: temperature para todas las ciudades
+2025-09-20 12:32:58,570 | INFO     | src.dashboard.predictive.features.feature_engineering | Aplicando ingeniería de características para temp_avg_c
+2025-09-20 12:32:58,572 | ERROR    | src.dashboard.predictive.features.feature_engineering | engineer_features:104  | Error en ingeniería de características: 'date'
+2025-09-20 12:32:58,572 | ERROR    | src.dashboard.predictive.predictive_manager | predict        :161  | Error en predicción: 'date'
+2025-09-20 12:32:58,574 | ERROR    | dashboard            | error          :72   | Error en predicción: 'date'
+2025-09-21 12:17:54,131 | INFO     | dashboard            | [CONFIG] Configuración ciudades cargada | Context: {"cities_count": 16}
+2025-09-21 12:17:54,133 | INFO     | dashboard            | [START] Iniciando inicialización del dashboard
+2025-09-21 12:17:54,240 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-21 12:17:54,269 | INFO     | data_manager         | [DB] consulta: query (16 filas) | Context: {"query_preview": "\n            SELECT DISTINCT city, lat, lon \n     "}
+2025-09-21 12:17:54,277 | INFO     | data_manager         | [DB] consulta: query (1472 filas) | Context: {"query_preview": "SELECT * FROM gold.city_yearly_summary"}
+2025-09-21 12:17:54,284 | INFO     | dashboard            | [SUCCESS] inicialización del dashboard completado exitosamente | Context: {"loaded_data_types": ["summary", "coords"], "has_map_component": true, "has_filter_manager": true}
+2025-09-21 12:18:07,551 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-21 12:18:10,314 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-21 12:18:10,327 | INFO     | src.dashboard.predictive.predictive_manager | Iniciando predicción: temperature para todas las ciudades
+2025-09-21 12:18:10,328 | ERROR    | src.dashboard.predictive.predictive_manager | _get_data_for_prediction:288  | Error obteniendo datos para predicción: 'DataManager' object has no attribute 'logger'
+2025-09-21 12:18:10,328 | ERROR    | src.dashboard.predictive.predictive_manager | predict        :161  | Error en predicción: 'DataManager' object has no attribute 'logger'
+2025-09-21 12:18:10,329 | ERROR    | dashboard            | error          :72   | Error en predicción: 'DataManager' object has no attribute 'logger'
+2025-09-21 12:23:18,679 | INFO     | dashboard            | [CONFIG] Configuración ciudades cargada | Context: {"cities_count": 16}
+2025-09-21 12:23:18,681 | INFO     | dashboard            | [START] Iniciando inicialización del dashboard
+2025-09-21 12:23:18,704 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-21 12:23:18,712 | INFO     | data_manager         | [DB] consulta: query (16 filas) | Context: {"query_preview": "\n            SELECT DISTINCT city, lat, lon \n     "}
+2025-09-21 12:23:18,718 | INFO     | data_manager         | [DB] consulta: query (1472 filas) | Context: {"query_preview": "SELECT * FROM gold.city_yearly_summary"}
+2025-09-21 12:23:18,725 | INFO     | dashboard            | [SUCCESS] inicialización del dashboard completado exitosamente | Context: {"loaded_data_types": ["coords", "summary"], "has_map_component": true, "has_filter_manager": true}
+2025-09-21 12:24:05,157 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-21 12:24:07,694 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-21 12:24:07,718 | INFO     | src.dashboard.predictive.predictive_manager | Iniciando predicción: temperature para todas las ciudades
+2025-09-21 12:24:07,719 | ERROR    | data_manager         | error          :72   | [ERROR] Error en obtención de datos diarios: 'DataManager' object has no attribute '_execute_query'
+Traceback (most recent call last):
+  File "C:\Users\danim\Desktop\Proyectos Datos\MeteoPanda\src\dashboard\data_manager.py", line 372, in get_daily_weather_data
+    data = self._execute_query(query)
+           ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'DataManager' object has no attribute '_execute_query'. Did you mean: 'execute_query'?
+2025-09-21 12:24:07,747 | INFO     | src.dashboard.predictive.features.feature_engineering | Aplicando ingeniería de características para temp_avg_c
+2025-09-21 12:24:07,782 | ERROR    | src.dashboard.predictive.features.feature_engineering | engineer_features:104  | Error en ingeniería de características: 'Column not found: temp_avg_c'
+2025-09-21 12:24:07,783 | ERROR    | src.dashboard.predictive.predictive_manager | predict        :161  | Error en predicción: 'Column not found: temp_avg_c'
+2025-09-21 12:24:07,785 | ERROR    | dashboard            | error          :72   | Error en predicción: 'Column not found: temp_avg_c'
+2025-09-21 12:31:27,204 | INFO     | dashboard            | [CONFIG] Configuración ciudades cargada | Context: {"cities_count": 16}
+2025-09-21 12:31:27,205 | INFO     | dashboard            | [START] Iniciando inicialización del dashboard
+2025-09-21 12:31:27,225 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-21 12:31:27,232 | INFO     | data_manager         | [DB] consulta: query (16 filas) | Context: {"query_preview": "\n            SELECT DISTINCT city, lat, lon \n     "}
+2025-09-21 12:31:27,238 | INFO     | data_manager         | [DB] consulta: query (1472 filas) | Context: {"query_preview": "SELECT * FROM gold.city_yearly_summary"}
+2025-09-21 12:31:27,244 | INFO     | dashboard            | [SUCCESS] inicialización del dashboard completado exitosamente | Context: {"loaded_data_types": ["coords", "summary"], "has_map_component": true, "has_filter_manager": true}
+2025-09-21 12:31:32,127 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-21 12:31:40,612 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-21 12:31:40,623 | INFO     | src.dashboard.predictive.predictive_manager | Iniciando predicción: temperature para todas las ciudades
+2025-09-21 12:31:40,627 | INFO     | data_manager         | [DB] consulta: query (1472 filas) | Context: {"query_preview": "\n            SELECT\n                city,\n        "}
+2025-09-21 12:31:40,631 | INFO     | data_manager         | [SUCCESS] obtención de datos Gold completado exitosamente | Context: {"records": 1472, "cities": 16}
+2025-09-21 12:31:40,631 | INFO     | src.dashboard.predictive.features.feature_engineering | Aplicando ingeniería de características para temp_avg_c
+2025-09-21 12:31:40,687 | INFO     | src.dashboard.predictive.features.feature_engineering | Características creadas: 59
+2025-09-21 12:31:40,687 | INFO     | src.dashboard.predictive.features.data_preparation | Preparando datos para Prophet - Variable: temp_avg_c, Ciudad: None
+2025-09-21 12:31:40,693 | INFO     | src.dashboard.predictive.features.data_preparation | Métricas de calidad: DataQualityMetrics(total_records=1472, missing_values=np.int64(0), missing_percentage=np.float64(0.0), date_range=(Timestamp('2020-01-01 00:00:00'), Timestamp('2024-12-01 00:00:00')), cities_count=16, completeness_score=np.float64(1.0))
+2025-09-21 12:31:40,695 | INFO     | src.dashboard.predictive.models.prophet_model | Entrenando modelo Prophet para y
+2025-09-21 12:31:40,788 | INFO     | src.dashboard.predictive.models.prophet_model | Iniciando entrenamiento del modelo...
+2025-09-21 12:31:40,890 | INFO     | cmdstanpy            | Chain [1] start processing
+2025-09-21 12:31:40,979 | INFO     | cmdstanpy            | Chain [1] done processing
+2025-09-21 12:31:41,178 | INFO     | src.dashboard.predictive.models.prophet_model | Modelo entrenado exitosamente. RMSE: 2.0600
+2025-09-21 12:31:41,179 | INFO     | src.dashboard.predictive.predictive_manager | Modelo entrenado y guardado: temperature_all_7
+2025-09-21 12:31:41,180 | INFO     | src.dashboard.predictive.models.prophet_model | Generando predicciones para 7 períodos
+2025-09-21 12:31:41,207 | INFO     | src.dashboard.predictive.models.prophet_model | Predicciones generadas exitosamente
+2025-09-21 12:31:41,209 | INFO     | src.dashboard.predictive.predictive_manager | Predicción completada exitosamente: 7 días
+2025-09-21 12:31:41,213 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-21 12:31:41,218 | INFO     | data_manager         | [DB] consulta: query (1472 filas) | Context: {"query_preview": "\n            SELECT\n                city,\n        "}
+2025-09-21 12:31:41,221 | INFO     | data_manager         | [SUCCESS] obtención de datos Gold completado exitosamente | Context: {"records": 1472, "cities": 16}
+2025-09-21 12:31:41,222 | ERROR    | src.dashboard.predictive.predictive_manager | get_prediction_chart:237  | Error generando gráfico: The truth value of a DataFrame is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
+2025-09-21 12:31:41,223 | ERROR    | dashboard            | error          :72   | Error en visualización: The truth value of a DataFrame is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().
+2025-09-21 12:35:06,023 | INFO     | dashboard            | [CONFIG] Configuración ciudades cargada | Context: {"cities_count": 16}
+2025-09-21 12:35:06,025 | INFO     | dashboard            | [START] Iniciando inicialización del dashboard
+2025-09-21 12:35:06,048 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-21 12:35:06,058 | INFO     | data_manager         | [DB] consulta: query (16 filas) | Context: {"query_preview": "\n            SELECT DISTINCT city, lat, lon \n     "}
+2025-09-21 12:35:06,065 | INFO     | data_manager         | [DB] consulta: query (1472 filas) | Context: {"query_preview": "SELECT * FROM gold.city_yearly_summary"}
+2025-09-21 12:35:06,074 | INFO     | dashboard            | [SUCCESS] inicialización del dashboard completado exitosamente | Context: {"loaded_data_types": ["coords", "summary"], "has_map_component": true, "has_filter_manager": true}
+2025-09-21 12:35:15,329 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-21 12:35:18,274 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-21 12:35:18,324 | INFO     | src.dashboard.predictive.predictive_manager | Iniciando predicción: temperature para todas las ciudades
+2025-09-21 12:35:18,341 | INFO     | data_manager         | [DB] consulta: query (1472 filas) | Context: {"query_preview": "\n            SELECT\n                city,\n        "}
+2025-09-21 12:35:18,351 | INFO     | data_manager         | [SUCCESS] obtención de datos Gold completado exitosamente | Context: {"records": 1472, "cities": 16}
+2025-09-21 12:35:18,352 | INFO     | src.dashboard.predictive.features.feature_engineering | Aplicando ingeniería de características para temp_avg_c
+2025-09-21 12:35:18,517 | INFO     | src.dashboard.predictive.features.feature_engineering | Características creadas: 59
+2025-09-21 12:35:18,518 | INFO     | src.dashboard.predictive.features.data_preparation | Preparando datos para Prophet - Variable: temp_avg_c, Ciudad: None
+2025-09-21 12:35:18,525 | INFO     | src.dashboard.predictive.features.data_preparation | Métricas de calidad: DataQualityMetrics(total_records=1472, missing_values=np.int64(0), missing_percentage=np.float64(0.0), date_range=(Timestamp('2020-01-01 00:00:00'), Timestamp('2024-12-01 00:00:00')), cities_count=16, completeness_score=np.float64(1.0))
+2025-09-21 12:35:18,526 | INFO     | src.dashboard.predictive.models.prophet_model | Entrenando modelo Prophet para y
+2025-09-21 12:35:18,663 | INFO     | src.dashboard.predictive.models.prophet_model | Iniciando entrenamiento del modelo...
+2025-09-21 12:35:18,797 | INFO     | cmdstanpy            | Chain [1] start processing
+2025-09-21 12:35:18,884 | INFO     | cmdstanpy            | Chain [1] done processing
+2025-09-21 12:35:19,271 | INFO     | src.dashboard.predictive.models.prophet_model | Modelo entrenado exitosamente. RMSE: 2.0600
+2025-09-21 12:35:19,271 | INFO     | src.dashboard.predictive.predictive_manager | Modelo entrenado y guardado: temperature_all_7
+2025-09-21 12:35:19,274 | INFO     | src.dashboard.predictive.models.prophet_model | Generando predicciones para 7 períodos
+2025-09-21 12:35:19,329 | INFO     | src.dashboard.predictive.models.prophet_model | Predicciones generadas exitosamente
+2025-09-21 12:35:19,333 | INFO     | src.dashboard.predictive.predictive_manager | Predicción completada exitosamente: 7 días
+2025-09-21 12:35:19,338 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-21 12:35:19,346 | INFO     | data_manager         | [DB] consulta: query (1472 filas) | Context: {"query_preview": "\n            SELECT\n                city,\n        "}
+2025-09-21 12:35:19,351 | INFO     | data_manager         | [SUCCESS] obtención de datos Gold completado exitosamente | Context: {"records": 1472, "cities": 16}
+2025-09-21 12:35:19,352 | INFO     | src.dashboard.predictive.visualizations.prediction_charts | Creando gráfico de predicción para y
+2025-09-21 12:35:19,428 | INFO     | src.dashboard.predictive.visualizations.prediction_charts | Gráfico de predicción creado exitosamente
+2025-09-21 12:35:32,666 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-21 12:35:34,577 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-21 12:35:34,591 | INFO     | src.dashboard.predictive.predictive_manager | Iniciando predicción: temperature para todas las ciudades
+2025-09-21 12:35:34,596 | INFO     | data_manager         | [DB] consulta: query (1472 filas) | Context: {"query_preview": "\n            SELECT\n                city,\n        "}
+2025-09-21 12:35:34,600 | INFO     | data_manager         | [SUCCESS] obtención de datos Gold completado exitosamente | Context: {"records": 1472, "cities": 16}
+2025-09-21 12:35:34,601 | INFO     | src.dashboard.predictive.features.feature_engineering | Aplicando ingeniería de características para temp_avg_c
+2025-09-21 12:35:34,655 | INFO     | src.dashboard.predictive.features.feature_engineering | Características creadas: 59
+2025-09-21 12:35:34,655 | INFO     | src.dashboard.predictive.features.data_preparation | Preparando datos para Prophet - Variable: temp_avg_c, Ciudad: None
+2025-09-21 12:35:34,663 | INFO     | src.dashboard.predictive.features.data_preparation | Métricas de calidad: DataQualityMetrics(total_records=1472, missing_values=np.int64(0), missing_percentage=np.float64(0.0), date_range=(Timestamp('2020-01-01 00:00:00'), Timestamp('2024-12-01 00:00:00')), cities_count=16, completeness_score=np.float64(1.0))
+2025-09-21 12:35:34,664 | INFO     | src.dashboard.predictive.models.prophet_model | Generando predicciones para 7 períodos
+2025-09-21 12:35:34,699 | INFO     | src.dashboard.predictive.models.prophet_model | Predicciones generadas exitosamente
+2025-09-21 12:35:34,703 | INFO     | src.dashboard.predictive.predictive_manager | Predicción completada exitosamente: 7 días
+2025-09-21 12:35:34,709 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-21 12:35:34,715 | INFO     | data_manager         | [DB] consulta: query (1472 filas) | Context: {"query_preview": "\n            SELECT\n                city,\n        "}
+2025-09-21 12:35:34,718 | INFO     | data_manager         | [SUCCESS] obtención de datos Gold completado exitosamente | Context: {"records": 1472, "cities": 16}
+2025-09-21 12:35:34,719 | INFO     | src.dashboard.predictive.visualizations.prediction_charts | Creando gráfico de predicción para y
+2025-09-21 12:35:34,746 | INFO     | src.dashboard.predictive.visualizations.prediction_charts | Gráfico de predicción creado exitosamente
+2025-09-21 12:35:34,753 | INFO     | src.dashboard.predictive.visualizations.prediction_charts | Creando gráfico de componentes
+2025-09-21 12:35:34,826 | INFO     | src.dashboard.predictive.visualizations.prediction_charts | Gráfico de componentes creado exitosamente
+2025-09-21 12:36:51,417 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-21 12:36:55,838 | INFO     | dashboard            | Dashboard ya inicializado, usando datos de session_state
+2025-09-21 12:36:55,850 | INFO     | src.dashboard.predictive.predictive_manager | Iniciando predicción: temperature para todas las ciudades
+2025-09-21 12:36:55,855 | INFO     | data_manager         | [DB] consulta: query (1472 filas) | Context: {"query_preview": "\n            SELECT\n                city,\n        "}
+2025-09-21 12:36:55,858 | INFO     | data_manager         | [SUCCESS] obtención de datos Gold completado exitosamente | Context: {"records": 1472, "cities": 16}
+2025-09-21 12:36:55,859 | INFO     | src.dashboard.predictive.features.feature_engineering | Aplicando ingeniería de características para temp_avg_c
+2025-09-21 12:36:55,909 | INFO     | src.dashboard.predictive.features.feature_engineering | Características creadas: 59
+2025-09-21 12:36:55,910 | INFO     | src.dashboard.predictive.features.data_preparation | Preparando datos para Prophet - Variable: temp_avg_c, Ciudad: None
+2025-09-21 12:36:55,916 | INFO     | src.dashboard.predictive.features.data_preparation | Métricas de calidad: DataQualityMetrics(total_records=1472, missing_values=np.int64(0), missing_percentage=np.float64(0.0), date_range=(Timestamp('2020-01-01 00:00:00'), Timestamp('2024-12-01 00:00:00')), cities_count=16, completeness_score=np.float64(1.0))
+2025-09-21 12:36:55,917 | INFO     | src.dashboard.predictive.models.prophet_model | Generando predicciones para 7 períodos
+2025-09-21 12:36:55,955 | INFO     | src.dashboard.predictive.models.prophet_model | Predicciones generadas exitosamente
+2025-09-21 12:36:55,959 | INFO     | src.dashboard.predictive.predictive_manager | Predicción completada exitosamente: 7 días
+2025-09-21 12:36:55,965 | INFO     | data_manager         | [DB] conectar: meteopanda.duckdb | Context: {"db_path": "meteopanda.duckdb"}
+2025-09-21 12:36:55,972 | INFO     | data_manager         | [DB] consulta: query (1472 filas) | Context: {"query_preview": "\n            SELECT\n                city,\n        "}
+2025-09-21 12:36:55,978 | INFO     | data_manager         | [SUCCESS] obtención de datos Gold completado exitosamente | Context: {"records": 1472, "cities": 16}
+2025-09-21 12:36:55,979 | INFO     | src.dashboard.predictive.visualizations.prediction_charts | Creando gráfico de predicción para y
+2025-09-21 12:36:56,002 | INFO     | src.dashboard.predictive.visualizations.prediction_charts | Gráfico de predicción creado exitosamente
+2025-09-21 12:36:56,009 | INFO     | src.dashboard.predictive.visualizations.prediction_charts | Creando gráfico de componentes
+2025-09-21 12:36:56,045 | INFO     | src.dashboard.predictive.visualizations.prediction_charts | Gráfico de componentes creado exitosamente

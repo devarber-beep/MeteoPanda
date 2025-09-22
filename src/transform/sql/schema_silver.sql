@@ -8,7 +8,7 @@ SELECT
     station,
     lat,
     lon,
-    strftime('%Y', date) AS year,
+    CAST(strftime('%Y', date) AS INT) AS year,
     tavg AS temp_avg_c,
     tmin AS temp_min_c,
     tmax AS temp_max_c,

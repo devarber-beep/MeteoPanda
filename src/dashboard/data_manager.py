@@ -17,6 +17,7 @@ class DataManager:
     def __init__(self, db_path: str = 'meteopanda.duckdb'):
         self.db_path = db_path
         self.connection = None
+        self.logger = logger
     
     def get_connection(self) -> duckdb.DuckDBPyConnection:
         """Obtener conexión a la base de datos con manejo de errores"""
@@ -338,4 +339,97 @@ class DataManager:
             'start_item': 0,
             'end_item': 0
         }
+    
+    def get_daily_weather_data(self) -> Optional[pd.DataFrame]:
+        """
+        Obtener datos diarios de clima para predicciones
+        Obtiene datos directamente de silver.weather_cleaned
+        """
+        try:
+            query = """
+            SELECT
+                date,
+                city,
+                region,
+                station,
+                lat,
+                lon,
+                temp_avg_c,
+                temp_max_c,
+                temp_min_c,
+                precip_mm,
+                humidity_percent,
+                wind_avg_kmh,
+                wind_gust_kmh,
+                pressure_hpa,
+                sunshine_min,
+                snow_depth_cm
+            FROM silver.weather_cleaned
+            WHERE date IS NOT NULL
+            ORDER BY city, date
+            """
+            
+            data = self.execute_query(query)
+            if data is not None and not data.empty:
+                log_operation_success(self.logger, "obtención de datos diarios", 
+                                    records=len(data), cities=data['city'].nunique())
+            else:
+                log_and_show_warning(self.logger, "No se encontraron datos diarios de clima")
+
+            return data
+
+        except Exception as e:
+            log_operation_error(self.logger, "obtención de datos diarios", e)
+            return None
+    
+    def get_gold_weather_data(self) -> Optional[pd.DataFrame]:
+        """
+        Obtener datos de clima desde tablas Gold
+        Usa gold.city_yearly_summary como fuente principal
+        """
+        try:
+            query = """
+            SELECT
+                city,
+                region,
+                station,
+                year,
+                month,
+                avg_temp,
+                max_temp,
+                min_temp,
+                total_precip,
+                total_sunshine,
+                avg_humidity,
+                lat,
+                lon
+            FROM gold.city_yearly_summary
+            ORDER BY city, year, month
+            """
+            
+            data = self.execute_query(query)
+            if data is not None and not data.empty:
+                # Crear fechas del primer día de cada mes
+                data['date'] = pd.to_datetime(data[['year', 'month']].assign(day=1))
+                
+                # Renombrar columnas para compatibilidad con Prophet
+                data = data.rename(columns={
+                    'avg_temp': 'temp_avg_c',
+                    'max_temp': 'temp_max_c', 
+                    'min_temp': 'temp_min_c',
+                    'total_precip': 'precip_mm',
+                    'avg_humidity': 'humidity_percent',
+                    'total_sunshine': 'sunshine_min'
+                })
+                
+                log_operation_success(self.logger, "obtención de datos Gold", 
+                                    records=len(data), cities=data['city'].nunique())
+            else:
+                log_and_show_warning(self.logger, "No se encontraron datos Gold de clima")
+
+            return data
+
+        except Exception as e:
+            log_operation_error(self.logger, "obtención de datos Gold", e)
+            return None
     

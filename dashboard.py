@@ -7,10 +7,15 @@ import yaml
 from typing import Dict, Optional
 import sys
 import os
+from datetime import datetime
 from streamlit_option_menu import option_menu
 
 # Añadir el directorio src al path para importar módulos
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+
+# Aplicar parche de compatibilidad con NumPy 2.0
+from src.dashboard.predictive.numpy_patch import apply_numpy_patch
+apply_numpy_patch()
 
 # Configurar logging antes de importar otros módulos
 from src.utils.logging_config import setup_logging, get_logger, log_operation_start, log_operation_success, log_operation_error, log_configuration_loaded, log_and_show_warning, log_and_show_error
@@ -34,6 +39,7 @@ from src.dashboard.analysis_strategies import (
     AlertAnalysisStrategy,
     ClimateComparisonStrategy
 )
+from src.dashboard.predictive import WeatherPredictiveManager, PredictionType, PredictionHorizon
 
 # Configuración de la página
 st.set_page_config(
@@ -78,6 +84,9 @@ class MeteoPandaDashboard:
         # Contexto de análisis
         self.analysis_context = None
         
+        # Sistema predictivo
+        self.predictive_manager = None
+        
         # Configuración de rendimiento
         self.performance_config = {
             'enable_lazy_loading': True,
@@ -97,6 +106,7 @@ class MeteoPandaDashboard:
             self.map_component = st.session_state.get('map_component')
             self.filter_manager = st.session_state.get('filter_manager')
             self.analysis_context = st.session_state.get('analysis_context')
+            self.predictive_manager = st.session_state.get('predictive_manager')
             
             # Asegurar que el data_manager esté asignado al table_component
             self.table_component.set_data_manager(self.data_manager)
@@ -133,6 +143,9 @@ class MeteoPandaDashboard:
                 self.chart_component
             )
             
+            # Inicializar sistema predictivo
+            self.predictive_manager = WeatherPredictiveManager(self.data_manager)
+            
             # Guardar en session_state para evitar reinicializaciones
             st.session_state['dashboard_initialized'] = True
             st.session_state['dashboard_data'] = self.data
@@ -140,6 +153,7 @@ class MeteoPandaDashboard:
             st.session_state['map_component'] = self.map_component
             st.session_state['filter_manager'] = self.filter_manager
             st.session_state['analysis_context'] = self.analysis_context
+            st.session_state['predictive_manager'] = self.predictive_manager
             
             log_operation_success(logger, "inicialización del dashboard", 
                                 loaded_data_types=list(self.loaded_data_types),
@@ -200,9 +214,11 @@ class MeteoPandaDashboard:
                 self.data_manager.clear_cache()
                 if self.map_component:
                     self.map_component.clear_cache()
+                if self.predictive_manager:
+                    self.predictive_manager.clear_cache()
                 # Limpiar session_state
                 for key in ['dashboard_initialized', 'dashboard_data', 'loaded_data_types', 
-                           'map_component', 'filter_manager', 'analysis_context']:
+                           'map_component', 'filter_manager', 'analysis_context', 'predictive_manager']:
                     if key in st.session_state:
                         del st.session_state[key]
                 st.rerun()
@@ -221,6 +237,7 @@ class MeteoPandaDashboard:
             "Análisis Estacional",
             "Alertas Meteorológicas",
             "Comparación Climática",
+            "Análisis Predictivo",
             "Configuración"
         ]
         
@@ -229,7 +246,7 @@ class MeteoPandaDashboard:
             menu_title=None,
             options=menu_options,
             icons=['house', 'table', 'map', 'trending-up', 'thermometer-half', 
-                   'cloud-rain', 'calendar', 'exclamation-triangle', 'globe', 'gear'],
+                   'cloud-rain', 'calendar', 'exclamation-triangle', 'globe', 'crystal-ball', 'gear'],
             menu_icon="cast",
             default_index=0,
             orientation="horizontal",
@@ -265,6 +282,8 @@ class MeteoPandaDashboard:
             self.render_alert_analysis()
         elif selected == "Comparación Climática":
             self.render_climate_comparison()
+        elif selected == "Análisis Predictivo":
+            self.render_predictive_analysis()
         elif selected == "Configuración":
             self.render_configuration()
     
@@ -476,6 +495,210 @@ class MeteoPandaDashboard:
             log_and_show_warning(logger, "No hay datos de comparación climática disponibles.", 
                                analysis_type="comparison", data_loaded=False)
     
+    def render_predictive_analysis(self):
+        """Renderizar análisis predictivo con Prophet"""
+        st.header("🔮 Análisis Predictivo Meteorológico")
+        st.markdown("Sistema avanzado de predicciones meteorológicas con Prophet y Machine Learning")
+        
+        if not self.predictive_manager:
+            st.error("Sistema predictivo no disponible. Reinicia el dashboard.")
+            return
+        
+        # Sidebar para configuración de predicción
+        with st.sidebar:
+            st.subheader("⚙️ Configuración de Predicción")
+            
+            # Tipo de predicción
+            prediction_type = st.selectbox(
+                "Variable a Predecir",
+                options=[
+                    ("Temperatura Promedio", PredictionType.TEMPERATURE),
+                    ("Precipitación", PredictionType.PRECIPITATION),
+                    ("Humedad", PredictionType.HUMIDITY),
+                    ("Presión Atmosférica", PredictionType.PRESSURE),
+                    ("Velocidad del Viento", PredictionType.WIND)
+                ],
+                format_func=lambda x: x[0],
+                key="prediction_type_selector"
+            )
+            
+            # Ciudad
+            cities = self.config.get('cities', []) if self.config else []
+            city_options = ["Todas las ciudades"] + [city['name'] for city in cities]
+            selected_city = st.selectbox(
+                "Ciudad",
+                options=city_options,
+                key="city_selector"
+            )
+            
+            # Horizonte de predicción
+            horizon_options = [
+                ("7 días", PredictionHorizon.SHORT_TERM),
+                ("14 días", PredictionHorizon.MEDIUM_TERM),
+                ("30 días", PredictionHorizon.LONG_TERM),
+                ("90 días", PredictionHorizon.SEASONAL)
+            ]
+            horizon = st.selectbox(
+                "Horizonte de Predicción",
+                options=horizon_options,
+                format_func=lambda x: x[0],
+                key="horizon_selector"
+            )
+            
+            # Opciones avanzadas
+            st.subheader("🔧 Opciones Avanzadas")
+            show_confidence = st.checkbox("Mostrar Intervalos de Confianza", value=True)
+            show_components = st.checkbox("Mostrar Componentes de Prophet", value=False)
+            add_regressors = st.checkbox("Usar Variables Adicionales", value=True)
+            
+            # Botón de predicción
+            if st.button("🚀 Generar Predicción", type="primary", use_container_width=True):
+                st.session_state['generate_prediction'] = True
+        
+        # Contenido principal
+        if st.session_state.get('generate_prediction', False):
+            try:
+                with st.spinner("Generando predicción meteorológica..."):
+                    # Crear solicitud de predicción
+                    from src.dashboard.predictive import PredictionRequest
+                    
+                    request = PredictionRequest(
+                        prediction_type=prediction_type[1],
+                        city=selected_city if selected_city != "Todas las ciudades" else None,
+                        horizon=horizon[1],
+                        include_confidence=show_confidence,
+                        add_regressors=add_regressors
+                    )
+                    
+                    # Generar predicción
+                    result = self.predictive_manager.predict(request)
+                    
+                    # Mostrar resultados
+                    self._display_prediction_results(result, prediction_type[0], show_components)
+                    
+                    # Limpiar flag
+                    st.session_state['generate_prediction'] = False
+                    
+            except Exception as e:
+                st.error(f"Error generando predicción: {str(e)}")
+                logger.error(f"Error en predicción: {str(e)}")
+        
+        # Información del sistema predictivo
+        with st.expander("ℹ️ Información del Sistema Predictivo"):
+            st.markdown("""
+            **Tecnologías Utilizadas:**
+            - 🤖 **Prophet**: Modelo de series temporales de Facebook
+            - 🧠 **Machine Learning**: Ingeniería de características avanzada
+            - 📊 **Visualizaciones**: Gráficos interactivos con Plotly
+            
+            **Características:**
+            - Predicciones con intervalos de confianza
+            - Detección automática de estacionalidad
+            - Alertas meteorológicas inteligentes
+            - Análisis de componentes (tendencia, estacionalidad)
+            - Soporte para múltiples ciudades
+            """)
+            
+            # Métricas del sistema
+            if self.predictive_manager:
+                summary = self.predictive_manager.get_model_performance_summary()
+                st.json(summary)
+    
+    def _display_prediction_results(self, result, prediction_name, show_components):
+        """Mostrar resultados de predicción"""
+        st.success(f"✅ Predicción generada exitosamente para {prediction_name}")
+        
+        # Métricas del modelo
+        if result.model_metrics:
+            st.subheader("📊 Métricas del Modelo")
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                st.metric("RMSE", f"{result.model_metrics.get('rmse', 0):.3f}")
+            with col2:
+                st.metric("MAE", f"{result.model_metrics.get('mae', 0):.3f}")
+            with col3:
+                st.metric("MAPE", f"{result.model_metrics.get('mape', 0):.1f}%")
+            with col4:
+                st.metric("R²", f"{result.model_metrics.get('r2', 0):.3f}")
+        
+        # Gráfico principal de predicción
+        st.subheader("📈 Predicción Meteorológica")
+        
+        try:
+            # Obtener datos históricos para contexto desde Gold
+            historical_data = self.data_manager.get_gold_weather_data()
+            if not historical_data.empty and result.predictions is not None:
+                # Filtrar datos históricos por ciudad si es necesario
+                if 'city' in historical_data.columns and st.session_state.get('city_selector') != "Todas las ciudades":
+                    historical_data = historical_data[historical_data['city'] == st.session_state.get('city_selector')]
+                
+                # Crear gráfico
+                chart = self.predictive_manager.get_prediction_chart(
+                    result, 
+                    historical_data, 
+                    "forecast"
+                )
+                st.plotly_chart(chart, use_container_width=True)
+            else:
+                st.warning("No se pudieron cargar datos históricos para el gráfico")
+                
+        except Exception as e:
+            st.error(f"Error creando gráfico: {str(e)}")
+            logger.error(f"Error en visualización: {str(e)}")
+        
+        # Componentes de Prophet
+        if show_components and result.components:
+            st.subheader("🔍 Componentes de la Predicción")
+            try:
+                components_chart = self.predictive_manager.get_prediction_chart(result, chart_type="components")
+                st.plotly_chart(components_chart, use_container_width=True)
+            except Exception as e:
+                st.warning(f"No se pudieron mostrar los componentes: {str(e)}")
+        
+        # Alertas meteorológicas
+        if result.alerts:
+            st.subheader("⚠️ Alertas Meteorológicas Predichas")
+            
+            for alert in result.alerts:
+                severity_color = {
+                    'HIGH': '🔴',
+                    'MEDIUM': '🟡', 
+                    'LOW': '🟢'
+                }.get(alert['severity'], '⚪')
+                
+                st.warning(
+                    f"{severity_color} **{alert['alert_type'].replace('_', ' ').title()}** - "
+                    f"{alert['date'].strftime('%Y-%m-%d')} - "
+                    f"Valor predicho: {alert['predicted_value']:.2f} "
+                    f"(Umbral: {alert['threshold']})"
+                )
+        
+        # Tabla de predicciones
+        if result.predictions is not None and not result.predictions.empty:
+            st.subheader("📋 Datos de Predicción")
+            
+            # Preparar datos para mostrar
+            display_data = result.predictions[['ds', 'yhat']].copy()
+            display_data['ds'] = display_data['ds'].dt.strftime('%Y-%m-%d')
+            display_data.columns = ['Fecha', f'Predicción {prediction_name}']
+            
+            # Agregar intervalos de confianza si están disponibles
+            if 'yhat_lower' in result.predictions.columns and 'yhat_upper' in result.predictions.columns:
+                display_data['Límite Inferior'] = result.predictions['yhat_lower'].round(2)
+                display_data['Límite Superior'] = result.predictions['yhat_upper'].round(2)
+            
+            st.dataframe(display_data, use_container_width=True)
+            
+            # Botón de descarga
+            csv = display_data.to_csv(index=False)
+            st.download_button(
+                label="📥 Descargar Predicciones (CSV)",
+                data=csv,
+                file_name=f"prediccion_{prediction_name.lower().replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.csv",
+                mime="text/csv"
+            )
+
     def render_configuration(self):
         """Renderizar página de configuración"""
         st.header("Configuración del Sistema")
