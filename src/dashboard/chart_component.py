@@ -585,6 +585,105 @@ class AdvancedChartComponent:
                     margin=dict(r=120)  # Margen derecho ligeramente menor para la leyenda
                 )
                 st.plotly_chart(fig4, use_container_width=True)
+
+    def render_similarity_heatmap(self, similarity_df: pd.DataFrame, title: str = "Matriz de Similitud Climática"):
+        """Renderiza un heatmap de similitud ciudad-ciudad (matriz simétrica y ordenada)."""
+        if similarity_df.empty:
+            st.warning("No hay datos de similitud para mostrar.")
+            return
+        st.subheader(title)
+        # Construir matriz simétrica (city x city). Partimos de top-k direccional y simetrizamos con el máximo
+        try:
+            df = similarity_df[['city','similar_city','similarity_score']].copy()
+            df_rev = df.rename(columns={'city':'similar_city','similar_city':'city'})
+            df_sym = pd.concat([df, df_rev], ignore_index=True)
+            matrix = df_sym.pivot_table(index='city', columns='similar_city', values='similarity_score', aggfunc='max').fillna(0)
+            # asegurar diagonal 1.0 para legibilidad relativa
+            for c in matrix.index:
+                if c in matrix.columns:
+                    matrix.loc[c, c] = 1.0
+            # Ordenar por afinidad media (sum of row)
+            order = matrix.mean(axis=1).sort_values(ascending=False).index
+            matrix = matrix.loc[order, order]
+        except Exception:
+            st.warning("No se pudo construir la matriz de similitud.")
+            return
+        fig = go.Figure(data=go.Heatmap(
+            z=matrix.values,
+            x=matrix.columns,
+            y=matrix.index,
+            colorscale='Viridis',
+            colorbar=dict(title='Similitud'),
+            zmin=0,
+            zmax=max(1.0, float(matrix.values.max()))
+        ))
+        fig.update_layout(template=self.template, height=600, xaxis_title="Ciudad", yaxis_title="Ciudad")
+        st.plotly_chart(fig, use_container_width=True)
+
+    def render_top_similars(self, similarity_df: pd.DataFrame, title: str = "Ciudades Más Similares"):
+        """Renderiza un gráfico de barras de top similares por ciudad seleccionada."""
+        if similarity_df.empty:
+            st.warning("No hay datos de similitud.")
+            return
+        st.subheader(title)
+        cities = sorted(similarity_df['city'].unique().tolist())
+        selected_city = st.selectbox("Ciudad base", options=cities)
+        k = st.slider("Top K", min_value=3, max_value=10, value=5, step=1)
+        topk = similarity_df[similarity_df['city'] == selected_city].sort_values('rank').head(k)
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            x=topk['similar_city'],
+            y=topk['similarity_score'],
+            marker_color='teal',
+            name='Score'
+        ))
+        fig.update_layout(template=self.template, height=350, xaxis_title="Ciudad similar", yaxis_title="Similitud")
+        st.plotly_chart(fig, use_container_width=True)
+
+    def render_outliers_overview(self, outliers_df: pd.DataFrame, title: str = "Outliers Climáticos por Ciudad"):
+        """Visualización de outliers: scatter score por ciudad y breakdown por variable dominante."""
+        if outliers_df.empty:
+            st.warning("No hay datos de outliers.")
+            return
+        st.subheader(title)
+        # Top N outliers
+        topn = outliers_df.sort_values('outlier_score', ascending=False).head(15)
+        col1, col2 = st.columns(2)
+        with col1:
+            fig1 = go.Figure()
+            fig1.add_trace(go.Bar(
+                x=topn['city'],
+                y=topn['outlier_score'],
+                marker_color='crimson'
+            ))
+            fig1.update_layout(template=self.template, height=350, xaxis_title="Ciudad", yaxis_title="Outlier score")
+            st.plotly_chart(fig1, use_container_width=True)
+        with col2:
+            by_var = topn['dominant_variable'].value_counts().reset_index()
+            by_var.columns = ['Variable', 'Ciudades']
+            fig2 = go.Figure(go.Pie(labels=by_var['Variable'], values=by_var['Ciudades']))
+            fig2.update_layout(template=self.template, height=350)
+            st.plotly_chart(fig2, use_container_width=True)
+
+    def render_similarity_pairs_table(self, similarity_df: pd.DataFrame, title: str = "Tabla de Pares Similares"):
+        """Tabla profesional con pares ciudad-ciudad, filtros y ordenación."""
+        if similarity_df.empty:
+            st.warning("No hay datos de similitud.")
+            return
+        st.subheader(title)
+        # Filtros simples en la propia tabla
+        col1, col2 = st.columns([1,1])
+        with col1:
+            base_city = st.selectbox("Filtrar por ciudad base (opcional)", options=["Todas"] + sorted(similarity_df['city'].unique().tolist()))
+        with col2:
+            min_score = st.slider("Score mínimo", min_value=float(similarity_df['similarity_score'].min()), max_value=float(similarity_df['similarity_score'].max()), value=float(similarity_df['similarity_score'].quantile(0.5)))
+        df = similarity_df.copy()
+        if base_city != "Todas":
+            df = df[df['city'] == base_city]
+        df = df[df['similarity_score'] >= min_score]
+        df_view = df[['city','similar_city','similarity_distance','similarity_score','rank']].sort_values(['city','rank'])
+        df_view = df_view.rename(columns={'city':'Ciudad','similar_city':'Similar a','similarity_distance':'Distancia','similarity_score':'Similitud','rank':'Rank'})
+        st.dataframe(df_view, use_container_width=True, hide_index=True)
     
     def render_kpi_dashboard(self, data: pd.DataFrame, title: str = "Dashboard de KPIs"):
         """Renderizar dashboard de KPIs"""

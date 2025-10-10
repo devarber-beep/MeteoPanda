@@ -12,4 +12,7 @@ __pycache__/
 data/
 .ipynb_checkpoints/
 .Captura de pantalla 2025-05-14 155748.png
-.ToDos.md
+ToDos.md
+
+#Configuracion de VS Code
+.vscode/

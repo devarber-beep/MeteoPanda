@@ -99,6 +99,16 @@ class DataManager:
     def load_comparison_data(_self) -> Optional[pd.DataFrame]:
         """Cargar datos de comparación climática"""
         return _self.execute_query("SELECT * FROM gold.climate_comparison")
+
+    @st.cache_data(ttl=7200)
+    def load_similarity_data(_self) -> Optional[pd.DataFrame]:
+        """Cargar datamart de similitud entre ciudades"""
+        return _self.execute_query("SELECT * FROM gold.city_similarity")
+
+    @st.cache_data(ttl=7200)
+    def load_outliers_data(_self) -> Optional[pd.DataFrame]:
+        """Cargar datamart de outliers climáticos por ciudad"""
+        return _self.execute_query("SELECT * FROM gold.city_outliers")
     
     @st.cache_data(ttl=7200)
     def get_essential_data(_self) -> Dict[str, pd.DataFrame]:
@@ -128,7 +138,9 @@ class DataManager:
             'coords': _self.load_coordinates_data,
             'alerts': _self.load_alerts_data,
             'seasonal': _self.load_seasonal_data,
-            'comparison': _self.load_comparison_data
+            'comparison': _self.load_comparison_data,
+            'similarity': _self.load_similarity_data,
+            'outliers': _self.load_outliers_data
         }
         
         if data_type in data_loaders:
@@ -151,7 +163,9 @@ class DataManager:
                 'coords': _self.load_coordinates_data(),
                 'alerts': _self.load_alerts_data(),
                 'seasonal': _self.load_seasonal_data(),
-                'comparison': _self.load_comparison_data()
+                'comparison': _self.load_comparison_data(),
+                'similarity': _self.load_similarity_data(),
+                'outliers': _self.load_outliers_data()
             }
             
             # Verificar que todos los datos se cargaron correctamente
@@ -272,7 +286,9 @@ class DataManager:
             'climate': "SELECT * FROM gold.climate_profiles",
             'alerts': "SELECT * FROM gold.weather_alerts",
             'seasonal': "SELECT * FROM gold.seasonal_analysis",
-            'comparison': "SELECT * FROM gold.climate_comparison"
+            'comparison': "SELECT * FROM gold.climate_comparison",
+            'similarity': "SELECT * FROM gold.city_similarity",
+            'outliers': "SELECT * FROM gold.city_outliers"
         }
         
         return queries.get(data_type, "SELECT * FROM gold.city_yearly_summary")
@@ -382,13 +398,19 @@ class DataManager:
             log_operation_error(self.logger, "obtención de datos diarios", e)
             return None
     
-    def get_gold_weather_data(self) -> Optional[pd.DataFrame]:
+    def get_gold_weather_data(self, city: str = None) -> Optional[pd.DataFrame]:
         """
         Obtener datos de clima desde tablas Gold
         Usa gold.city_yearly_summary como fuente principal
+        
+        Args:
+            city: Ciudad específica a filtrar (opcional)
         """
         try:
-            query = """
+            # Construir query con filtro de ciudad si se especifica
+            where_clause = f"WHERE city = '{city}'" if city else ""
+            
+            query = f"""
             SELECT
                 city,
                 region,
@@ -404,6 +426,7 @@ class DataManager:
                 lat,
                 lon
             FROM gold.city_yearly_summary
+            {where_clause}
             ORDER BY city, year, month
             """
             
